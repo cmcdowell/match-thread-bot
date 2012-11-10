@@ -1,0 +1,9 @@
+Created to post and update multiple match threads on reddit.com/r/soccer.
+
+Fixtures are stored in an sqlite3 database called fixtures.db
+fixtures.py will scrape the fixtures off of the eurosport website and store
+them in the databae.
+
+bot.py is the actual bot.
+
+Check out reddit.com/u/Match-Thread-Bot to see it in action.
