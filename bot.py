@@ -223,6 +223,8 @@ def scrape_events(url):
     returns a dictionairy with keys min, event, event type
     (min meaning minute not minumum). Each key maps to a list
     containing each value in the order it apeared on the given webpage.
+
+    e.g.
     """
 
     output = {'min': [],
