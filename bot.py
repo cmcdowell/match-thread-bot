@@ -43,7 +43,7 @@ def main():
             # this stops an out of index error.
             time_until_kick_off = 45 * 60.0
 
-        print '%f minuites until next kick off' % (time_until_kick_off / 60)
+        print '%f minutes until next kick off' % (time_until_kick_off / 60)
 
         if post_queue and time_until_kick_off < (45 * 60):
             post = post_queue.pop()
@@ -94,7 +94,7 @@ def main():
             print 'Finished'
             break
 
-        sleep(500)
+        sleep(600)
 
 
 def scrape_stats(url):
@@ -183,11 +183,20 @@ def scrape_stats(url):
     # Grabs the score
     score_html = soup.find('td', {'class': 'score'})
     try:
-        score = (score_html.contents[0].strip() +
-                 '' + score_html.span.contents[0].strip())
+        score = score_html.contents[0].strip()
     except AttributeError as e:
         score = ''
         print 'Score not found', e
+    except IndexError as e:
+        score = ''
+        print 'Score not found', e
+
+    try:
+        score += score_html.span.contents[0].strip()
+    except AttributeError as e:
+        print 'Half time score not found', e
+    except IndexError as e:
+        print 'Half time Score not found', e
 
     output['score'] = score
 
