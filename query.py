@@ -12,7 +12,7 @@ def query_fixtures():
                ('Queens Park Rangers', 'qpr'),
                ('Aston Villa', 'aston-villa')]
 
-    con = sqlite3.connect('fix.db')
+    con = sqlite3.connect('fixtures.db')
     cursor = con.cursor()
                         # DATETIME(kick_off) < DATETIME('now')
 
