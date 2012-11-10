@@ -29,9 +29,8 @@ def main():
 
     print post_queue
 
-    # r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer,
-    # by /u/Match-Thread-Bot')
-    # r.login()
+    r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
+    r.login()
 
     while True:
 
@@ -42,11 +41,11 @@ def main():
         else:
             # The following is a bit ugly. If the post_queue is empty
             # this stops an out of index error.
-            time_until_kick_off = 45 * 60
+            time_until_kick_off = 45 * 60.0
 
-        print time_until_kick_off
+        print '%f minuites until next kick off' % time_until_kick_off
 
-        if post_queue:  # and time_until_kick_off < (45 * 60):
+        if post_queue and time_until_kick_off < (45 * 60):
             post = post_queue.pop()
             home_team = post[2]
             away_team = post[3]
@@ -54,13 +53,13 @@ def main():
                                                away_team)
             content = construct_thread(post)
 
-            with open('debug%d.txt' % post[0], 'w') as f:
-                f.write(content.encode('utf8'))
-                print 'posting thread'
-            # submission = r.submit('soccer', title, content)
-            # print 'posting thread %s' % submission.title
-            update_queue.appendleft(post)  # ((submission, post))
-            print 'adding thread to update queue'  # % submission.title
+            # with open('debug%d.txt' % post[0], 'w') as f:
+            #     f.write(content.encode('utf8'))
+            #     print 'posting thread'
+            submission = r.submit('reddit_api_test', title, content)
+            print 'posting thread %s' % submission.title
+            update_queue.appendleft((submission, post))
+            print 'adding thread to update queue %s' % submission.title
 
         elif update_queue:
             for p in update_queue:
@@ -71,12 +70,12 @@ def main():
                 print p
             print '\n'
 
-            with open('debug%d.txt' % post[0], 'w') as f:
-                f.write(construct_thread(post).encode('utf8'))
-                print 'updating thread'
+            # with open('debug%d.txt' % post[0], 'w') as f:
+            #     f.write(construct_thread(post).encode('utf8'))
+            #     print 'updating thread'
 
-            # post[0].edit(construct_thread(post[1]))
-            # print 'updating thread'
+            post[0].edit(construct_thread(post[1]))
+            print 'updating thread %s' % post[0].title
             # Time past kick off in seconds
             time_past_kick_off = float((datetime.now() -
                                         datetime.strptime(post[1],
@@ -84,18 +83,18 @@ def main():
                                         ).total_seconds())
 
             # Each match thread is updated for 180 minutes
-            seconds_left = 3 * 60 - time_past_kick_off
+            seconds_left = 180 * 60 - time_past_kick_off
 
             if seconds_left > 0:
                 update_queue.appendleft(post)
-                print ('adding thread to update queue %f minutes left' %
-                       (seconds_left / 60))
+                print ('adding thread %s to update queue %f minutes left' %
+                       (post[0].title, (seconds_left / 60)))
 
         if not post_queue and not update_queue:
             print 'Finished'
             break
 
-        sleep(10)
+        sleep(500)
 
 
 def scrape_stats(url):
@@ -226,6 +225,7 @@ def scrape_events(url):
 
     e.g.
     """
+    print url
 
     output = {'min': [],
               'event type': [],

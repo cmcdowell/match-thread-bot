@@ -18,7 +18,7 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                    SELECT * FROM fixtures_tbl LIMIT 1;
+                    SELECT * FROM fixtures_tbl LIMIT 3;
                        """)
 
         rows = cursor.fetchall()
