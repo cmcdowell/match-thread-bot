@@ -43,7 +43,7 @@ def main():
             # this stops an out of index error.
             time_until_kick_off = 45 * 60.0
 
-        print '%f minuites until next kick off' % time_until_kick_off
+        print '%f minuites until next kick off' % (time_until_kick_off / 60)
 
         if post_queue and time_until_kick_off < (45 * 60):
             post = post_queue.pop()
