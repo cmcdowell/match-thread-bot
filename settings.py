@@ -37,6 +37,7 @@ score: %s  \n
 \n  
 ***  \n  
 ^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback)  
+^^Checkout ^^Match-Thread-Bot ^^on ^^[github](https://github.com/cmcdowell/match-thread-bot).   
 """
 
 events_string = """ | | |  
