@@ -14,7 +14,10 @@ def query_fixtures():
 
     con = sqlite3.connect('fixtures.db')
     cursor = con.cursor()
-                        # DATETIME(kick_off) < DATETIME('now')
+
+    # This query wont be in the finished version, this is just for testing. The
+    # query in the finished version will retrive all of the fixtures for the
+    # next 24 hours.
 
     with con:
         cursor.execute("""
