@@ -40,7 +40,7 @@ score: %s  \n
 """
 
 events_string = """ | | |  
-:--|--:|:--|  \n"""
+:--|:--|:--|  \n"""
 
 stats_string = """**%s**|Statistic|**%s**  
 --:|:--:|:--  \n"""
