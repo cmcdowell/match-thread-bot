@@ -5,26 +5,83 @@ from urllib2 import urlopen, HTTPError
 
 from collections import deque
 from datetime import datetime, timedelta
-from query import query_fixtures, list_replace
 from time import sleep
 import praw  # Python Reddit Api Wrapper
+import sqlite3
+
+
+def list_replace(lst, changes):
+    team_string = '+'.join(lst)
+    for change in changes:
+        team_string = team_string.replace(change[0], change[1])
+    team_string = team_string.lower()
+    team_string = team_string.replace(' ', '')
+
+    return team_string.split('+')
+
+
+def query_fixtures():
+    """
+    Returns a list of fixtures for the next 24 hours. Each fixture is a list
+    containing [id in db, datetime of kick off as a string format YYYY-MM-DD
+    hh:mm:ss, home team as string, away team as string, venue as string, league
+    as string, played as integer 1 being True 0 being False, home team url,
+    away team url]
+    """
+
+    changes = [('West Bromwich Albion', 'westbrom'),
+               ('Manchester United', 'manchester-united'),
+               ('Tottenham Hotspur', 'tottenham-hotspur'),
+               ('Swansea City', 'swansea'),
+               ('Queens Park Rangers', 'qpr'),
+               ('Aston Villa', 'aston-villa'),
+               (u'M\xe1laga CF', 'malaga')]
+
+    con = sqlite3.connect('fixtures.db')
+    cursor = con.cursor()
+
+    # This query wont be in the finished version, this is just for testing. The
+    # query in the finished version will retrive all of the fixtures for the
+    # next 24 hours.
+
+    with con:
+        cursor.execute("""
+                    SELECT * FROM fixtures_tbl WHERE id IS 8;
+                       """)
+
+        rows = cursor.fetchall()
+        fixture_list = []
+
+        for row in rows:
+            fixture_list.append(list(row))
+
+        away_list, home_list = [], []
+
+        for row in fixture_list:
+            away_list.append(row[3])
+
+        for row in fixture_list:
+            home_list.append(row[2])
+
+        home_list = list_replace(home_list, changes)
+        away_list = list_replace(away_list, changes)
+
+        for i, row in enumerate(fixture_list):
+            row.append(home_list[i])
+            row.append(away_list[i])
+
+        return fixture_list
 
 
 def main():
 
     update_queue = deque([])
-
-    # returns a list of fixtures for the day, ordered by datetime
-    # fixtures are lists of the following form
-    # [id in db table, datetime string yyyy-mm-dd hh:mm:ss, home team,
-    # away team, venue, league, if played, home team's url portion,
-    # away team's url portion]
     post_queue = deque(query_fixtures())
 
     print 'Length of post queue: %d' % len(post_queue)
 
     r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
-    r.login()
+    r.login()  # Login details in praw.ini file
 
     while True:
 
@@ -47,9 +104,17 @@ def main():
                                                away_team)
             content = construct_thread(post)
 
+            # When debugging, rather than submiting to reddit, the content of
+            # each post is written to a text file. Uncomment the nex 5 lines
+            # for debuging.
+
+            # print title
             # with open('debug%d.txt' % post[0], 'w') as f:
             #     f.write(content.encode('utf8'))
             #     print 'posting thread'
+            # update_queue.appendleft(post)
+
+            # Comment next 4 lines for debuging
             submission = r.submit('soccer', title, content)
             print 'posting thread %s' % submission.title
             update_queue.appendleft((submission, post))
@@ -59,10 +124,12 @@ def main():
             print 'length of update queue %d' % len(update_queue)
             post = update_queue.pop()
 
+            # Uncomment next three lines for debugging
             # with open('debug%d.txt' % post[0], 'w') as f:
             #     f.write(construct_thread(post).encode('utf8'))
             #     print 'updating thread'
 
+            # Comment next 2 lines for debuging
             post[0].edit(construct_thread(post[1]))
             print 'updating thread %s' % post[0].title
             # Time past kick off in seconds
@@ -76,14 +143,17 @@ def main():
 
             if seconds_left > 0:
                 update_queue.appendleft(post)
+                # Comment next 2 lines for debuging
                 print ('adding thread %s to update queue %f minutes left' %
                        (post[0].title, (seconds_left / 60)))
+                # Uncoment next line for debuging
+                # print 'Adding thread to update queue'
 
         if not post_queue and not update_queue:
             print 'Finished'
             break
 
-        sleep(600)
+        sleep(10)
 
 
 def scrape_stats(url):
