@@ -12,7 +12,6 @@ import praw  # Python Reddit Api Wrapper
 
 def main():
 
-    post_queue = deque([])
     update_queue = deque([])
 
     # returns a list of fixtures for the day, ordered by datetime
@@ -20,14 +19,9 @@ def main():
     # [id in db table, datetime string yyyy-mm-dd hh:mm:ss, home team,
     # away team, venue, league, if played, home team's url portion,
     # away team's url portion]
-    relevent_fixtures = query_fixtures()
+    post_queue = deque(query_fixtures())
 
-    for fixture in relevent_fixtures:
-        # add the returned fixtures to the queue with the most recent at the
-        # right of the queue
-        post_queue.appendleft(fixture)
-
-    print post_queue
+    print 'Length of post queue: %d' % len(post_queue)
 
     r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
     r.login()
@@ -56,19 +50,14 @@ def main():
             # with open('debug%d.txt' % post[0], 'w') as f:
             #     f.write(content.encode('utf8'))
             #     print 'posting thread'
-            submission = r.submit('reddit_api_test', title, content)
+            submission = r.submit('soccer', title, content)
             print 'posting thread %s' % submission.title
             update_queue.appendleft((submission, post))
             print 'adding thread to update queue %s' % submission.title
 
         elif update_queue:
-            for p in update_queue:
-                print p
-            print '\n'
+            print 'length of update queue %d' % len(update_queue)
             post = update_queue.pop()
-            for p in update_queue:
-                print p
-            print '\n'
 
             # with open('debug%d.txt' % post[0], 'w') as f:
             #     f.write(construct_thread(post).encode('utf8'))

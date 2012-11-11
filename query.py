@@ -10,7 +10,8 @@ def query_fixtures():
                ('Tottenham Hotspur', 'tottenham-hotspur'),
                ('Swansea City', 'swansea'),
                ('Queens Park Rangers', 'qpr'),
-               ('Aston Villa', 'aston-villa')]
+               ('Aston Villa', 'aston-villa'),
+               (u'M\xe1laga CF', 'malaga')]
 
     con = sqlite3.connect('fixtures.db')
     cursor = con.cursor()
@@ -21,7 +22,10 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                    SELECT * FROM fixtures_tbl LIMIT 3;
+                    SELECT * FROM fixtures_tbl
+                    WHERE
+                        league IS 'premier-league'
+                    ORDER BY kick_off LIMIT 10;
                        """)
 
         rows = cursor.fetchall()
