@@ -92,11 +92,11 @@ def main():
         else:
             # The following is a bit ugly. If the post_queue is empty
             # this stops an out of index error.
-            time_until_kick_off = 45 * 60.0
+            time_until_kick_off = 20 * 60.0
 
         print '%f minutes until next kick off' % (time_until_kick_off / 60)
 
-        if post_queue and time_until_kick_off < (45 * 60):
+        if post_queue and time_until_kick_off < (20 * 60):
             post = post_queue.pop()
             home_team = post[2]
             away_team = post[3]
@@ -114,11 +114,16 @@ def main():
             #     print 'posting thread'
             # update_queue.appendleft(post)
 
-            # Comment next 4 lines for debuging
-            submission = r.submit('soccer', title, content)
-            print 'posting thread %s' % submission.title
-            update_queue.appendleft((submission, post))
-            print 'adding thread to update queue %s' % submission.title
+            # Comment next 9 lines for debuging
+            try:
+                submission = r.submit('soccer', title, content)
+            except praw.APIException as e:
+                post_queue.append(post)
+                print 'Could not submit thread', e
+            else:
+                print 'posting thread %s' % submission.title
+                update_queue.appendleft((submission, post))
+                print 'adding thread to update queue %s' % submission.title
 
         elif update_queue:
             print 'length of update queue %d' % len(update_queue)
@@ -129,31 +134,36 @@ def main():
             #     f.write(construct_thread(post).encode('utf8'))
             #     print 'updating thread'
 
-            # Comment next 2 lines for debuging
-            post[0].edit(construct_thread(post[1]))
-            print 'updating thread %s' % post[0].title
-            # Time past kick off in seconds
-            time_past_kick_off = float((datetime.now() -
-                                        datetime.strptime(post[1],
-                                                          '%Y-%m-%d %H:%M:%S')
-                                        ).total_seconds())
+            # Comment relevent lines for debuging
+            try:
+                post[0].edit(construct_thread(post[1]))
+            except praw.RateLimitExceeded as e:
+                update_queue.append(post)
+                print 'Could not update thread', e
+            else:
+                print 'updating thread %s' % post[0].title
+                # Time past kick off in seconds
+                time_past_kick_off = float((datetime.now() -
+                                            datetime.strptime(post[1][1],
+                                                              '%Y-%m-%d %H:%M:%S')
+                                            ).total_seconds())
 
-            # Each match thread is updated for 180 minutes
-            seconds_left = 180 * 60 - time_past_kick_off
+                # Each match thread is updated for 200 minutes
+                seconds_left = 200 * 60 - time_past_kick_off
 
-            if seconds_left > 0:
-                update_queue.appendleft(post)
-                # Comment next 2 lines for debuging
-                print ('adding thread %s to update queue %f minutes left' %
-                       (post[0].title, (seconds_left / 60)))
-                # Uncoment next line for debuging
-                # print 'Adding thread to update queue'
+                if seconds_left > 0:
+                    update_queue.appendleft(post)
+                    # Comment next 2 lines for debuging
+                    print ('adding thread %s to update queue %f minutes left' %
+                           (post[0].title, (seconds_left / 60)))
+                    # Uncoment next line for debuging
+                    # print 'Adding thread to update queue'
 
         if not post_queue and not update_queue:
             print 'Finished'
             break
 
-        sleep(10)
+        sleep(600)
 
 
 def scrape_stats(url):
