@@ -7,6 +7,7 @@ from collections import deque
 from datetime import datetime, timedelta
 from time import sleep
 import praw  # Python Reddit Api Wrapper
+from praw.errors import APIException
 import sqlite3
 
 
@@ -35,7 +36,8 @@ def query_fixtures():
                ('Swansea City', 'swansea'),
                ('Queens Park Rangers', 'qpr'),
                ('Aston Villa', 'aston-villa'),
-               (u'M\xe1laga CF', 'malaga')]
+               (u'M\xe1laga CF', 'malaga'),
+               ('Levante UD', 'levante')]
 
     con = sqlite3.connect('fixtures.db')
     cursor = con.cursor()
@@ -117,7 +119,7 @@ def main():
             # Comment next 9 lines for debuging
             try:
                 submission = r.submit('soccer', title, content)
-            except praw.APIException as e:
+            except APIException as e:
                 post_queue.append(post)
                 print 'Could not submit thread', e
             else:
@@ -137,7 +139,7 @@ def main():
             # Comment relevent lines for debuging
             try:
                 post[0].edit(construct_thread(post[1]))
-            except praw.RateLimitExceeded as e:
+            except APIException as e:
                 update_queue.append(post)
                 print 'Could not update thread', e
             else:
