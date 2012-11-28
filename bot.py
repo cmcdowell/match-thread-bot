@@ -3,10 +3,11 @@
 from bs4 import BeautifulSoup  # BeautifulSoup4
 from urllib2 import urlopen, HTTPError, URLError
 
-from collections import deque
+from collections import deque, namedtuple
 from datetime import datetime, timedelta
 from praw.errors import APIException
 from time import sleep
+from settings import comment
 import praw  # Python Reddit Api Wrapper
 import sqlite3
 
@@ -108,19 +109,8 @@ def main():
                                                away_team)
             content = construct_thread(post)
 
-            # When debugging, rather than submiting to reddit, the content of
-            # each post is written to a text file. Uncomment the nex 5 lines
-            # for debuging.
-
-            # print title
-            # with open('debug%d.txt' % post[0], 'w') as f:
-            #     f.write(content.encode('utf8'))
-            #     print 'posting thread'
-            # update_queue.appendleft(post)
-
-            # Comment next 9 lines for debuging
             try:
-                submission = r.submit('soccer', title, content)
+                submission = r.submit('chessporn', title, content)
             except APIException as e:
                 post_queue.append(post)
                 print 'Could not submit thread', e
@@ -129,27 +119,25 @@ def main():
                 print 'Could not submit thread', e
             else:
                 print 'posting thread %s' % submission.title
+
+                submission.add_comment(comment)
+
                 update_queue.appendleft((submission, post))
                 print 'adding thread to update queue %s' % submission.title
 
         elif update_queue:
-            print 'length of update queue %d' % len(update_queue)
+            print 'length of update queue: %d' % len(update_queue)
             post = update_queue.pop()
 
-            # Uncomment next three lines for debugging
-            # with open('debug%d.txt' % post[0], 'w') as f:
-            #     f.write(construct_thread(post).encode('utf8'))
-            #     print 'updating thread'
-
-            # Comment relevent lines for debuging
             try:
-                post[0].edit(construct_thread(post[1]))
+                post[0].edit(construct_thread(post[1],
+                                              submission_id=post[0].id))
             except APIException as e:
                 update_queue.append(post)
                 print 'Could not update thread', e
             except URLError as e:
                 update_queue.append(post)
-                print 'Could not submit thread', e
+                print 'Could not update thread', e
             else:
                 print 'updating thread %s' % post[0].title
                 # Time past kick off in seconds
@@ -158,52 +146,45 @@ def main():
                                                               '%Y-%m-%d %H:%M:%S')
                                             ).total_seconds())
 
-                # Each match thread is updated for 200 minutes
-                seconds_left = 200 * 60 - time_past_kick_off
+                # Each match thread is updated for 180 minutes
+                seconds_left = 180 * 60 - time_past_kick_off
 
                 if seconds_left > 0:
                     update_queue.appendleft(post)
-                    # Comment next 2 lines for debuging
                     print ('adding thread %s to update queue %f minutes left' %
                            (post[0].title, (seconds_left / 60)))
-                    # Uncoment next line for debuging
-                    # print 'Adding thread to update queue'
 
         if not post_queue and not update_queue:
-            print 'Finished'
+            print '\n Finished!'
             break
 
-        sleep(120)
+        print '\n'
+        sleep(10)
 
 
 def scrape_stats(url):
     """
-    Takes the url of the match stats page for the game on the guardian
-    website. Returns a dictionary with keys stat, home value, away value,
-    home squad, away squad, score, referee, attendance. home squad,
-    away squad, score, referee, and attendence map to strings. stat,
-    home value, and away value map to lists coaining ecach value in the
-    order they appear on the given webpage.
+    Scrapes stats from target url.
 
-    E.g.
-    returned_dict['stat'] = [u'Posession', u'Corners', u'Fouls']
-    returned_dict['home value'] = [u'68%', u'3', u'2']
-    returned_dict['away value'] = [u'32%', u'0', u'3']
-
-    Each elemet with in each list will be a unicode string if the list is
-    not empty.
+    Returns a named tuple with stat, home, home_squad, away_squad, score
+    referee, attendance
     """
 
-    print url
+    print 'Scraping stats from ', url
 
-    output = {'stat': [],
-              'home value': [],
-              'away value': [],
-              'home squad': '',
-              'away squad': '',
-              'score': '',
-              'referee': '',
-              'attendance': ''}
+    output = namedtuple('output',
+                        ['stat',
+                         'home',
+                         'home_squad',
+                         'away_squad',
+                         'score',
+                         'referee',
+                         'attendance'])
+
+    output.stat, output.home, output.away = [], [], []
+
+    (output.home_squad, output.away_squad, output.score,
+     output.referee, output.attendance) = '', '', '', '', ''
 
     try:
         f = urlopen(url)
@@ -215,15 +196,11 @@ def scrape_stats(url):
         return output
 
     page = f.read()
-
-    # f = open('html/westhamunited-v-manchestercity.htm')
-    # page = f.read()
-    # f.close()
-
     soup = BeautifulSoup(page)
 
     # Grabs the stats for the match stats section
-    table = soup.find('table', {'summary': 'Corners, Goal attempts, Goals on target, Fouls and Offside match statistics'})
+    table = soup.find('table',
+                      {'summary': 'Corners, Goal attempts, Goals on target, Fouls and Offside match statistics'})
     try:
         rows = table.findAll('tr', {'class': 'section'})
     except AttributeError as e:
@@ -233,13 +210,13 @@ def scrape_stats(url):
     for row in rows:
         try:
             stat = row.findAll('span', {'class': 'number'})
-            output['home value'].append(stat[0].contents[0])
-            output['away value'].append(stat[1].contents[0])
-            output['stat'].append(row.th.contents[0])
+            output.home.append(stat[0].contents[0])
+            output.away.append(stat[1].contents[0])
+            output.stat.append(row.th.contents[0])
         except AttributeError as e:
-            output['home value'].append('')
-            output['away value'].append('')
-            output['stat'].append('')
+            output.home.append('')
+            output.away.append('')
+            output.stat.append('')
             print 'Stat not found', e
 
     # Grabs the squads for the lineups section
@@ -252,10 +229,10 @@ def scrape_stats(url):
         # Concatonates all players in the squad into one big string. Could
         # maybe append them to a list if I want to post the lineups as a table.
         for player in home_squad_html:
-            output['home squad'] += player.contents[0]
+            output.home_squad += player.contents[0]
 
         for player in away_squad_html:
-            output['away squad'] += player.contents[0]
+            output.away_squad += player.contents[0]
 
     except IndexError as e:
         print 'Could not find team lineups', e
@@ -274,16 +251,18 @@ def scrape_stats(url):
         print 'Score not found', e
 
     try:
-        score += score_html.span.contents[0].strip()
+        # Adds the half time score
+        score += (' ' + score_html.span.contents[0].strip())
     except AttributeError as e:
         print 'Half time score not found', e
     except IndexError as e:
         print 'Half time Score not found', e
 
-    output['score'] = score
+    output.score = score
 
     # Grabs the referee and the attendance
-    table = soup.find('table', {'summary': 'Referee, Venue and Attendance details'})
+    table = soup.find('table',
+                      {'summary': 'Referee, Venue and Attendance details'})
 
     try:
         data = table.findAll('td')
@@ -292,15 +271,13 @@ def scrape_stats(url):
         data = []
 
     try:
-        output['referee'] = data[0].contents[0]
+        output.referee = data[0].contents[0]
     except IndexError as e:
-        output['referee'] = ''
         print 'Could not find referee', e
 
     try:
-        output['attendance'] = data[2].contents[0]
+        output.attendance = data[2].contents[0]
     except IndexError as e:
-        output['attendance'] = ''
         print 'Could not find attendance', e
 
     return output
@@ -309,18 +286,14 @@ def scrape_stats(url):
 def scrape_events(url):
 
     """
-    Given the url of a match events page from the guardian webiste,
-    returns a dictionairy with keys min, event, event type
-    (min meaning minute not minumum). Each key maps to a list
-    containing each value in the order it apeared on the given webpage.
+    Scrapes events from the target url.
 
-    e.g.
+    Returns a named tuple with minute, event_type, event
     """
-    print url
+    print 'Scraping events form ', url
 
-    output = {'min': [],
-              'event type': [],
-              'event': []}
+    output = namedtuple('output', 'minute event_type event')
+    output.minute, output.event_type, output.event = [], [], []
 
     try:
         f = urlopen(url)
@@ -346,27 +319,27 @@ def scrape_events(url):
 
     for row in table:
         try:
-            output['min'].append(row.td.contents[0])
+            output.minute.append(row.td.contents[0])
         except AttributeError:
-            output['min'].append('')
+            output.minute.append('')
         try:
-            output['event type'].append(row.td.next_sibling.next_sibling.contents[1].contents[0])
+            output.event_type.append(row.td.next_sibling.next_sibling.contents[1].contents[0])
         except AttributeError:
-            output['event type'].append('')
+            output.event_type.append('')
         try:
-            output['event'].append(row.td.next_sibling.next_sibling.contents[2])
+            output.event.append(row.td.next_sibling.next_sibling.contents[2])
         except AttributeError:
-            output['event'].append('')
+            output.event.append('')
 
     # Replace the event types with custom event types defined above
-    output['event type'] = list_replace(output['event type'], changes)
+    output.event_type = list_replace(output.event_type, changes)
 
     return output
 
 
-def construct_thread(fixture):
+def construct_thread(fixture, submission_id='#'):
 
-    from settings import template, events_string, stats_string
+    from settings import template, stats_string
 
     kick_off = datetime.strptime(fixture[1], '%Y-%m-%d %H:%M:%S')
     month = datetime.strftime(kick_off, '%b').lower()
@@ -375,41 +348,49 @@ def construct_thread(fixture):
     # The following esentially guesses what the url is going to be for each
     # match on the guardian website. Luckily their url's are fairly
     # predictable.
-    stats = scrape_stats('http://www.guardian.co.uk/football/match/%s/%s/%02d/%s-v-%s' % (kick_off.year,
-                                                                                          month,
-                                                                                          kick_off.day,
-                                                                                          home,
-                                                                                          away))
-    events = scrape_events('http://www.guardian.co.uk/football/match-popup/%s/%s/%02d/%s-v-%s' % (kick_off.year,
-                                                                                                  month,
-                                                                                                  kick_off.day,
-                                                                                                  home,
-                                                                                                  away))
+    stats = scrape_stats('http://www.guardian.co.uk/football/match/%s/%s/%02d/%s-v-%s' %
+                         (kick_off.year,
+                          month,
+                          kick_off.day,
+                          home,
+                          away))
+
+    events = scrape_events('http://www.guardian.co.uk/football/match-popup/%s/%s/%02d/%s-v-%s' %
+                           (kick_off.year,
+                            month,
+                            kick_off.day,
+                            home,
+                            away))
 
     stats_string = stats_string % (fixture[2], fixture[3])  # (home team, away team)
+    events_string = ''
 
-    for i in range(len(events['min'])):
-        events_string += '%s %s %s  \n' % (events['min'][i].strip(),
-                                           events['event type'][i].strip(),
-                                           events['event'][i].strip())
+    for i in range(len(events.minute)):
+        events_string += '%s %s %s  \n' % (events.minute[i].strip(),
+                                           events.event_type[i].strip(),
+                                           events.event[i].strip())
 
-    for i in range(len(stats['stat'])):
-        stats_string += '%s|%s|%s  \n' % (stats['home value'][i].strip(),
-                                          stats['stat'][i].strip(),
-                                          stats['away value'][i].strip())
+    for i in range(len(stats.stat)):
+        stats_string += '%s|%s|%s  \n' % (stats.home[i].strip(),
+                                          stats.stat[i].strip(),
+                                          stats.away[i].strip())
 
     # TODO better hadling of timezones. This will break with DST.
-    text = template % (datetime.strftime(kick_off, '%H:%M GMT'),
-                       datetime.strftime(kick_off + timedelta(hours=1), '%H:%M CET'),
-                       datetime.strftime(kick_off + timedelta(hours=5), '%H:%M EST'),
+    text = template % (datetime.strftime(kick_off,
+                                         '%H:%M GMT'),
+                       datetime.strftime(kick_off + timedelta(hours=1),
+                                         '%H:%M CET'),
+                       datetime.strftime(kick_off + timedelta(hours=5),
+                                         '%H:%M EST'),
                        fixture[4],  # Venue
-                       stats['referee'],
-                       stats['attendance'],
+                       stats.referee,
+                       stats.attendance,
+                       submission_id,
                        fixture[2],  # Home Team
-                       stats['home squad'],
+                       stats.home_squad,
                        fixture[3],  # Away Team
-                       stats['away squad'],
-                       stats['score'],
+                       stats.away_squad,
+                       stats.score,
                        stats_string,
                        events_string)
     return text
