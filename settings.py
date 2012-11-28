@@ -5,6 +5,9 @@ Kickoff: %s, %s, %s
 Venue: %s  
 Referee: %s  
 Attendance: %s  
+  \n
+[Reddit Stream](http://www.reddit-stream.com/comments/%s)  
+/r/soccer [chat room](http://webchat.freenode.net/?channels=#reddit-soccer)  
 
 ***  \n
   
@@ -39,8 +42,13 @@ score: %s  \n
 ^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback)  ^^Checkout ^^Match-Thread-Bot ^^on ^^[github](https://github.com/cmcdowell/match-thread-bot).   
 """
 
-events_string = """ | | |  
-:--|:--|:--|  \n"""
 
 stats_string = """**%s**|Statistic|**%s**  
---:|:--:|:--  \n"""
+--:|:--:|:--  \n"""  
+  
+comment = """
+Streaming links                          
+[1](http://www.wiziwig.tv/competition.php?part=sports&discipline=football)  \n 
+[2](www.livefootballol.tv/)  \n   
+[3](http://www.thefirstrow.eu/sport/football.html)  \n 
+"""
