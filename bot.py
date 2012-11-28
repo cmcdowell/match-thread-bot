@@ -1,13 +1,13 @@
 #!user/bin/env python
 
 from bs4 import BeautifulSoup  # BeautifulSoup4
-from urllib2 import urlopen, HTTPError
+from urllib2 import urlopen, HTTPError, URLError
 
 from collections import deque
 from datetime import datetime, timedelta
+from praw.errors import APIException
 from time import sleep
 import praw  # Python Reddit Api Wrapper
-from praw.errors import APIException
 import sqlite3
 
 
@@ -37,6 +37,7 @@ def query_fixtures():
                ('Queens Park Rangers', 'qpr'),
                ('Aston Villa', 'aston-villa'),
                (u'M\xe1laga CF', 'malaga'),
+               ('FC Barcelona', 'barcelona'),
                ('Levante UD', 'levante')]
 
     con = sqlite3.connect('fixtures.db')
@@ -48,7 +49,9 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                    SELECT * FROM fixtures_tbl WHERE id IS 8;
+                    SELECT * FROM fixtures_tbl WHERE id IS 31
+                       OR id IS 32
+                       ORDER BY kick_off DESC;
                        """)
 
         rows = cursor.fetchall()
@@ -80,8 +83,6 @@ def main():
     update_queue = deque([])
     post_queue = deque(query_fixtures())
 
-    print 'Length of post queue: %d' % len(post_queue)
-
     r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
     r.login()  # Login details in praw.ini file
 
@@ -97,6 +98,7 @@ def main():
             time_until_kick_off = 20 * 60.0
 
         print '%f minutes until next kick off' % (time_until_kick_off / 60)
+        print 'Length of post queue: %d' % len(post_queue)
 
         if post_queue and time_until_kick_off < (20 * 60):
             post = post_queue.pop()
@@ -122,6 +124,9 @@ def main():
             except APIException as e:
                 post_queue.append(post)
                 print 'Could not submit thread', e
+            except URLError as e:
+                post_queue.append(post)
+                print 'Could not submit thread', e
             else:
                 print 'posting thread %s' % submission.title
                 update_queue.appendleft((submission, post))
@@ -142,6 +147,9 @@ def main():
             except APIException as e:
                 update_queue.append(post)
                 print 'Could not update thread', e
+            except URLError as e:
+                update_queue.append(post)
+                print 'Could not submit thread', e
             else:
                 print 'updating thread %s' % post[0].title
                 # Time past kick off in seconds
@@ -165,7 +173,7 @@ def main():
             print 'Finished'
             break
 
-        sleep(600)
+        sleep(120)
 
 
 def scrape_stats(url):
@@ -200,6 +208,9 @@ def scrape_stats(url):
     try:
         f = urlopen(url)
     except HTTPError as e:
+        print "Can't find stats page", e
+        return output
+    except URLError as e:
         print "Can't find stats page", e
         return output
 
@@ -316,6 +327,9 @@ def scrape_events(url):
     except HTTPError as e:
         print "Can't find events page", e
         return output
+    except URLError as e:
+        print "Can't find stats page", e
+        return output
 
     page = f.read()
     soup = BeautifulSoup(page)
@@ -328,7 +342,7 @@ def scrape_events(url):
     changes = [('SUB', '[](//#sub) Sub'),
                ('RED CARD', '[](//#red) Red'),
                ('YELLOW CARD', '[](//#yellow) Yellow'),
-               ('GOAL', '[](//#ball) Goal')]
+               ('GOAL', '[](//#ball) **Goal**')]
 
     for row in table:
         try:
@@ -375,7 +389,7 @@ def construct_thread(fixture):
     stats_string = stats_string % (fixture[2], fixture[3])  # (home team, away team)
 
     for i in range(len(events['min'])):
-        events_string += '%s|%s|%s  \n' % (events['min'][i].strip(),
+        events_string += '%s %s %s  \n' % (events['min'][i].strip(),
                                            events['event type'][i].strip(),
                                            events['event'][i].strip())
 
