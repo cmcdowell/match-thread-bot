@@ -10,6 +10,22 @@ from time import sleep
 from settings import comment
 import praw  # Python Reddit Api Wrapper
 import sqlite3
+import re
+
+
+def thread_exists(home, away, r):
+
+    home = max(home.split(), key=len)
+    away = max(away.split(), key=len)
+    sleep(1)
+    subreddit = r.get_subreddit('soccer')
+    for submission in subreddit.get_new(limit=20):
+        print submission.title
+        if (re.search(r'Match Thread:.*%s.*' % home, submission.title) or
+            re.search(r'Match Thread:.*%s.*' % away, submission.title)):
+
+            return True
+    return False
 
 
 def list_replace(lst, changes):
@@ -50,9 +66,8 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                    SELECT * FROM fixtures_tbl WHERE id IS 31
-                       OR id IS 32
-                       ORDER BY kick_off DESC;
+                    SELECT * FROM fixtures_tbl WHERE league IS 'premier-league'
+                       AND id > 32 AND id < 41 ORDER BY kick_off DESC;
                        """)
 
         rows = cursor.fetchall()
@@ -96,12 +111,12 @@ def main():
         else:
             # The following is a bit ugly. If the post_queue is empty
             # this stops an out of index error.
-            time_until_kick_off = 20 * 60.0
+            time_until_kick_off = 5 * 60.0
 
         print '%f minutes until next kick off' % (time_until_kick_off / 60)
         print 'Length of post queue: %d' % len(post_queue)
 
-        if post_queue and time_until_kick_off < (20 * 60):
+        if post_queue and time_until_kick_off < (5 * 60):
             post = post_queue.pop()
             home_team = post[2]
             away_team = post[3]
@@ -109,21 +124,24 @@ def main():
                                                away_team)
             content = construct_thread(post)
 
-            try:
-                submission = r.submit('chessporn', title, content)
-            except APIException as e:
-                post_queue.append(post)
-                print 'Could not submit thread', e
-            except URLError as e:
-                post_queue.append(post)
-                print 'Could not submit thread', e
+            if not thread_exists(home_team, away_team, r):
+                try:
+                    submission = r.submit('soccer', title, content)
+                except APIException as e:
+                    post_queue.append(post)
+                    print 'Could not submit thread', e
+                except URLError as e:
+                    post_queue.append(post)
+                    print 'Could not submit thread', e
+                else:
+                    print 'posting thread %s' % submission.title
+
+                    submission.add_comment(comment)
+
+                    update_queue.appendleft((submission, post))
+                    print 'adding thread to update queue %s' % submission.title
             else:
-                print 'posting thread %s' % submission.title
-
-                submission.add_comment(comment)
-
-                update_queue.appendleft((submission, post))
-                print 'adding thread to update queue %s' % submission.title
+                print 'Thread %s already exists' % title
 
         elif update_queue:
             print 'length of update queue: %d' % len(update_queue)
@@ -159,7 +177,7 @@ def main():
             break
 
         print '\n'
-        sleep(10)
+        sleep(20)
 
 
 def scrape_stats(url):
