@@ -20,10 +20,7 @@ def thread_exists(home, away, r):
     sleep(1)
     subreddit = r.get_subreddit('soccer')
     for submission in subreddit.get_new(limit=20):
-        print submission.title
-        if (re.search(r'Match Thread:.*%s.*' % home, submission.title) or
-            re.search(r'Match Thread:.*%s.*' % away, submission.title)):
-
+        if re.search(r'Match Thread.*%s.*%s.*' % (home, away), submission.title):
             return True
     return False
 
@@ -55,6 +52,13 @@ def query_fixtures():
                ('Aston Villa', 'aston-villa'),
                (u'M\xe1laga CF', 'malaga'),
                ('FC Barcelona', 'barcelona'),
+               (u'Atl\u00E9tico Madrid', 'atleticomadrid'),
+               ('VfL Wolfsburg', 'wolfsburg'),
+               ('VfB Stuttgart', 'stuttgart'),
+               ('Shalke 04', 'shalke'),
+               ('As Roma', 'roma'),
+               ('Getafe CF', 'getafe'),
+               ('Valencia CF', 'valencia'),
                ('Levante UD', 'levante')]
 
     con = sqlite3.connect('fixtures.db')
@@ -66,23 +70,15 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                    SELECT * FROM fixtures_tbl WHERE league IS 'premier-league'
-                       AND id > 32 AND id < 41 ORDER BY kick_off DESC;
+                       select * from fixtures_tbl where
+                       id is 11;
                        """)
 
         rows = cursor.fetchall()
-        fixture_list = []
+        fixture_list = [list(row) for row in rows]
 
-        for row in rows:
-            fixture_list.append(list(row))
-
-        away_list, home_list = [], []
-
-        for row in fixture_list:
-            away_list.append(row[3])
-
-        for row in fixture_list:
-            home_list.append(row[2])
+        home_list = [record[2] for record in fixture_list]
+        away_list = [record[3] for record in fixture_list]
 
         home_list = list_replace(home_list, changes)
         away_list = list_replace(away_list, changes)
@@ -126,7 +122,7 @@ def main():
 
             if not thread_exists(home_team, away_team, r):
                 try:
-                    submission = r.submit('soccer', title, content)
+                    submission = r.submit('chessporn', title, content)
                 except APIException as e:
                     post_queue.append(post)
                     print 'Could not submit thread', e
