@@ -90,6 +90,7 @@ def query_fixtures():
         return fixture_list
 
 
+
 def main():
 
     update_queue = deque([])
@@ -122,7 +123,7 @@ def main():
 
             if not thread_exists(home_team, away_team, r):
                 try:
-                    submission = r.submit('chessporn', title, content)
+                    submission = r.submit('soccer', title, content)
                 except APIException as e:
                     post_queue.append(post)
                     print 'Could not submit thread', e
