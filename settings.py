@@ -48,7 +48,7 @@ stats_string = """**%s**|Statistic|**%s**
   
 comment = """
 Streaming links                          
-[1](http://www.wiziwig.tv/competition.php?part=sports&competitionid=2&discipline=football)  \n 
+[1](http://www.wiziwig.tv/competition.php?part=sports&discipline=football)  \n 
 [2](http://www.livefootballol.tv)  \n   
 [3](http://www.thefirstrow.eu/sport/football.html)  \n 
 """

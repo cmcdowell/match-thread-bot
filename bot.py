@@ -19,8 +19,8 @@ def thread_exists(home, away, r):
     away = max(away.split(), key=len)
     sleep(1)
     subreddit = r.get_subreddit('soccer')
-    for submission in subreddit.get_new(limit=20):
-        if re.search(r'Match Thread.*%s.*%s.*' % (home, away), submission.title):
+    for submission in subreddit.get_new(limit=25):
+        if re.search(r'^Match Thread.*%s.*%s.*' % (home, away), submission.title):
             return True
     return False
 
@@ -47,6 +47,7 @@ def query_fixtures():
     changes = [('West Bromwich Albion', 'westbrom'),
                ('Manchester United', 'manchester-united'),
                ('Tottenham Hotspur', 'tottenham-hotspur'),
+               ('FSV Mainz 05', 'fsvmainz'),
                ('Swansea City', 'swansea'),
                ('Queens Park Rangers', 'qpr'),
                ('Aston Villa', 'aston-villa'),
@@ -56,22 +57,38 @@ def query_fixtures():
                ('VfL Wolfsburg', 'wolfsburg'),
                ('VfB Stuttgart', 'stuttgart'),
                ('Shalke 04', 'shalke'),
-               ('As Roma', 'roma'),
+               ('AS Roma', 'roma'),
+               ('SC Freiburg', 'freiburg'),
                ('Getafe CF', 'getafe'),
                ('Valencia CF', 'valencia'),
+               (u"Borussia M\u2019gladbach", 'borussiamoenchengladbach'),
+               ('RCD Mallorca', 'realmallorca'),
+               ('Sevilla FC', 'sevilla'),
+               ('Hamburger SV', 'hamburg'),
+               ('SC Freiburg', 'freiburg'),
+               ('Schalke 04', 'schalke'),
                ('Levante UD', 'levante')]
 
     con = sqlite3.connect('fixtures.db')
     cursor = con.cursor()
-
     # This query wont be in the finished version, this is just for testing. The
     # query in the finished version will retrive all of the fixtures for the
     # next 24 hours.
 
     with con:
         cursor.execute("""
-                       select * from fixtures_tbl where
-                       id is 11;
+                       select * from fixtures_tbl where datetime(kick_off) > datetime('now') and datetime(kick_off) < datetime('2013-01-20 00:00:00')
+                       and
+                           id is not 176
+                       and
+                           id is not 526
+                       and
+                           id is not 173
+                       and
+                           id is not 524
+                       and
+                           id is not 364
+                       order by kick_off desc;
                        """)
 
         rows = cursor.fetchall()
@@ -88,93 +105,6 @@ def query_fixtures():
             row.append(away_list[i])
 
         return fixture_list
-
-
-
-def main():
-
-    update_queue = deque([])
-    post_queue = deque(query_fixtures())
-
-    r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
-    r.login()  # Login details in praw.ini file
-
-    while True:
-
-        if post_queue:
-            time_until_kick_off = (datetime.strptime(post_queue[-1][1],
-                                                     '%Y-%m-%d %H:%M:%S') -
-                                   datetime.now()).total_seconds()
-        else:
-            # The following is a bit ugly. If the post_queue is empty
-            # this stops an out of index error.
-            time_until_kick_off = 5 * 60.0
-
-        print '%f minutes until next kick off' % (time_until_kick_off / 60)
-        print 'Length of post queue: %d' % len(post_queue)
-
-        if post_queue and time_until_kick_off < (5 * 60):
-            post = post_queue.pop()
-            home_team = post[2]
-            away_team = post[3]
-            title = 'Match Thread: %s v %s' % (home_team,
-                                               away_team)
-            content = construct_thread(post)
-
-            if not thread_exists(home_team, away_team, r):
-                try:
-                    submission = r.submit('soccer', title, content)
-                except APIException as e:
-                    post_queue.append(post)
-                    print 'Could not submit thread', e
-                except URLError as e:
-                    post_queue.append(post)
-                    print 'Could not submit thread', e
-                else:
-                    print 'posting thread %s' % submission.title
-
-                    submission.add_comment(comment)
-
-                    update_queue.appendleft((submission, post))
-                    print 'adding thread to update queue %s' % submission.title
-            else:
-                print 'Thread %s already exists' % title
-
-        elif update_queue:
-            print 'length of update queue: %d' % len(update_queue)
-            post = update_queue.pop()
-
-            try:
-                post[0].edit(construct_thread(post[1],
-                                              submission_id=post[0].id))
-            except APIException as e:
-                update_queue.append(post)
-                print 'Could not update thread', e
-            except URLError as e:
-                update_queue.append(post)
-                print 'Could not update thread', e
-            else:
-                print 'updating thread %s' % post[0].title
-                # Time past kick off in seconds
-                time_past_kick_off = float((datetime.now() -
-                                            datetime.strptime(post[1][1],
-                                                              '%Y-%m-%d %H:%M:%S')
-                                            ).total_seconds())
-
-                # Each match thread is updated for 180 minutes
-                seconds_left = 180 * 60 - time_past_kick_off
-
-                if seconds_left > 0:
-                    update_queue.appendleft(post)
-                    print ('adding thread %s to update queue %f minutes left' %
-                           (post[0].title, (seconds_left / 60)))
-
-        if not post_queue and not update_queue:
-            print '\n Finished!'
-            break
-
-        print '\n'
-        sleep(20)
 
 
 def scrape_stats(url):
@@ -202,7 +132,7 @@ def scrape_stats(url):
      output.referee, output.attendance) = '', '', '', '', ''
 
     try:
-        f = urlopen(url)
+        page = urlopen(url).read()
     except HTTPError as e:
         print "Can't find stats page", e
         return output
@@ -210,7 +140,6 @@ def scrape_stats(url):
         print "Can't find stats page", e
         return output
 
-    page = f.read()
     soup = BeautifulSoup(page)
 
     # Grabs the stats for the match stats section
@@ -311,15 +240,14 @@ def scrape_events(url):
     output.minute, output.event_type, output.event = [], [], []
 
     try:
-        f = urlopen(url)
+        page = urlopen(url).read()
     except HTTPError as e:
         print "Can't find events page", e
         return output
     except URLError as e:
-        print "Can't find stats page", e
+        print "Can't find events page", e
         return output
 
-    page = f.read()
     soup = BeautifulSoup(page)
 
     # List of table rows with css class event
@@ -395,7 +323,7 @@ def construct_thread(fixture, submission_id='#'):
                                          '%H:%M GMT'),
                        datetime.strftime(kick_off + timedelta(hours=1),
                                          '%H:%M CET'),
-                       datetime.strftime(kick_off + timedelta(hours=5),
+                       datetime.strftime(kick_off + timedelta(hours=-5),
                                          '%H:%M EST'),
                        fixture[4],  # Venue
                        stats.referee,
@@ -409,6 +337,93 @@ def construct_thread(fixture, submission_id='#'):
                        stats_string,
                        events_string)
     return text
+
+
+def main():
+
+    update_queue = deque([])
+    post_queue = deque(query_fixtures())
+
+    r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
+    r.login()  # Login details in praw.ini file
+
+    while True:
+
+        if post_queue:
+            time_until_kick_off = (datetime.strptime(post_queue[-1][1],
+                                                     '%Y-%m-%d %H:%M:%S') -
+                                   datetime.now()).total_seconds()
+        else:
+            # The following is a bit ugly. If the post_queue is empty
+            # this stops an out of index error.
+            time_until_kick_off = 5 * 60.0
+
+        print '%f minutes until next kick off.' % (time_until_kick_off / 60)
+        print 'Length of post queue:\t%d' % len(post_queue)
+        print 'Length of update queue:\t%d' % len(update_queue)
+
+        if post_queue and time_until_kick_off < (5 * 60):
+            post = post_queue.pop()
+            home_team = post[2]
+            away_team = post[3]
+            title = 'Match Thread: %s v %s' % (home_team,
+                                               away_team)
+            content = construct_thread(post)
+
+            if not thread_exists(home_team, away_team, r):
+                try:
+                    submission = r.submit('soccer', title, content)
+                except APIException as e:
+                    post_queue.append(post)
+                    print 'Could not submit thread', e
+                except URLError as e:
+                    post_queue.append(post)
+                    print 'Could not submit thread', e
+                else:
+                    print 'posting thread %s' % submission.title
+
+                    submission.add_comment(comment)
+
+                    update_queue.appendleft((submission, post))
+                    print 'adding thread to update queue %s' % submission.title
+            else:
+                print 'Thread %s already exists' % title
+
+        elif update_queue:
+            post = update_queue.pop()
+
+            try:
+                post[0].edit(construct_thread(post[1],
+                                              submission_id=post[0].id))
+            except APIException as e:
+                update_queue.append(post)
+                print 'Could not update thread', e
+            except URLError as e:
+                update_queue.append(post)
+                print 'Could not update thread', e
+            else:
+                print 'updating thread %s' % post[0].title
+                # Time past kick off in seconds
+                time_past_kick_off = float((datetime.now() -
+                                            datetime.strptime(post[1][1],
+                                                              '%Y-%m-%d %H:%M:%S')
+                                            ).total_seconds())
+
+                # Each match thread is updated for 130 minutes
+                seconds_left = 130 * 60 - time_past_kick_off
+
+                if seconds_left > 0:
+                    update_queue.appendleft(post)
+                    print ('adding thread %s to update queue %f minutes left' %
+                           (post[0].title, (seconds_left / 60)))
+
+        if not post_queue and not update_queue:
+            print '\n Finished!'
+            break
+
+        print '\n'
+        sleep(30)
+
 
 if __name__ == '__main__':
     main()
