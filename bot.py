@@ -2,6 +2,7 @@
 
 from lib import Match, Queue
 from urllib2 import URLError
+from sys import argv
 
 from datetime import datetime, timedelta
 from praw.errors import APIException
@@ -26,11 +27,7 @@ def thread_exists(home, away, r):
 
 def query_fixtures():
     """
-    Returns a list of fixtures for the next 24 hours. Each fixture is a list
-    containing [id in db, datetime of kick off as a string format YYYY-MM-DD
-    hh:mm:ss, home team as string, away team as string, venue as string, league
-    as string, played as integer 1 being True 0 being False, home team url,
-    away team url]
+    Returns a Queue of Match objects.
     """
 
     con = sqlite3.connect('fixtures.db')
@@ -40,10 +37,7 @@ def query_fixtures():
     # next 24 hours.
 
     with con:
-        cursor.execute("""
-                       select * from fixtures_tbl where id < 3
-                       order by kick_off desc;
-                       """)
+        cursor.execute(argv[1])
 
         rows = cursor.fetchall()
         fixture_queue = Queue(len(rows))
@@ -56,7 +50,7 @@ def query_fixtures():
 
 def construct_thread(match, submission_id='#'):
 
-    from settings import template, stats_string
+    from settings import TEMPLATE, stats_string
 
     kick_off = match.kick_off
 
@@ -77,24 +71,25 @@ def construct_thread(match, submission_id='#'):
                                           stats.away[i].strip())
 
     # TODO better hadling of timezones. This will break with DST.
-    text = template % (datetime.strftime(kick_off,
-                                         '%H:%M GMT'),
-                       datetime.strftime(kick_off + timedelta(hours=1),
-                                         '%H:%M CET'),
-                       datetime.strftime(kick_off + timedelta(hours=-5),
-                                         '%H:%M EST'),
-                       match.venue,
-                       stats.referee,
-                       stats.attendance,
-                       submission_id,
-                       match.home_team,
-                       stats.home_squad,
-                       match.away_team,
-                       stats.away_squad,
-                       stats.score,
-                       stats_string,
-                       events_string)
-    return text
+    context = {'GMT': datetime.strftime(kick_off,
+                                        '%H:%M GMT'),
+               'CET': datetime.strftime(kick_off + timedelta(hours=1),
+                                        '%H:%M CET'),
+               'EST': datetime.strftime(kick_off + timedelta(hours=-5),
+                                        '%H:%M EST'),
+               'venue': match.venue,
+               'referee': stats.referee,
+               'attendance': stats.attendance,
+               'id': submission_id,
+               'home_team': match.home_team,
+               'home_squad': stats.home_squad,
+               'away_team': match.away_team,
+               'away_squad': stats.away_squad,
+               'score': stats.score,
+               'stats_string': stats_string,
+               'events_string': events_string}
+
+    return TEMPLATE.substitute(context)
 
 
 def main():
@@ -107,11 +102,21 @@ def main():
 
     while True:
 
-        print '{0} minutes until next kick off.'.format(int(post_queue.latest().time_until_kick_off()))
+        if not post_queue.empty():
+            time_until_kick_off = post_queue.latest().time_until_kick_off()
+        else:
+            time_until_kick_off = 0
+
+        print '{0} minutes until next kick off.'.format(time_until_kick_off)
         print 'Length of post queue:\t{0}'.format(len(post_queue))
         print 'Length of update queue:\t{0}'.format(len(update_queue))
 
-        if not post_queue.empty() and post_queue.latest().time_until_kick_off() < (5 * 60):
+        if not post_queue.empty():
+            time_until_kick_off = post_queue.latest().time_until_kick_off()
+        else:
+            time_until_kick_off = 0
+
+        if not post_queue.empty() and time_until_kick_off < (5):
             post = post_queue.dequeue()
             title = 'Match Thread: {0} v {1}'.format(post.home_team,
                                                      post.away_team)
@@ -149,7 +154,7 @@ def main():
             else:
                 print 'updating thread {0}'.format(post[0].title)
 
-                time_left = 130 - post.time_past_kick_off()
+                time_left = 130 - post[1].time_after_kick_off()
 
                 if time_left > 0:
                     update_queue.enqueue(post)

@@ -1,4 +1,4 @@
-# Trialing spaces MUST be retained in this file. Reddit uses them for fomating.
+import string
 
 CHANGES = [('West Bromwich Albion', 'westbrom'),
            ('Manchester United', 'manchester-united'),
@@ -25,47 +25,47 @@ CHANGES = [('West Bromwich Albion', 'westbrom'),
            ('Schalke 04', 'schalke'),
            ('Levante UD', 'levante')]
 
-template = """
-Kickoff: %s, %s, %s
-Venue: %s
-Referee: %s
-Attendance: %s
+TEMPLATE = string.Template("""
+Kickoff: $GMT, $CET, $EST  \n
+Venue: $venue  \n
+Referee: $referee  \n
+Attendance: $attendance  \n
   \n
-[Reddit Stream](http://www.reddit-stream.com/comments/%s)
+[Reddit Stream](http://www.reddit-stream.com/comments/$id)
 /r/soccer [chat room](http://webchat.freenode.net/?channels=#reddit-soccer)
 
 ***  \n
 
 Lineups
 
-**%s**  \n
+**$home_team**  \n
 
-%s
+$home_squad
 
   \n
-**%s**  \n
+**$away_team**  \n
 
-%s
+$away_squad
 
 ***  \n
 
 **Match Stats**  \n
 
-score: %s  \n
+score: $score  \n
 
-%s
+$stats_string
 \n
 
 ***  \n
 
 **Match Events**
   \n
-%s
+$events_string
 
 \n
 ***  \n
 ^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback)
-"""
+""")
 
 
 stats_string = """**%s**|Statistic|**%s**
