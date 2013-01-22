@@ -1,5 +1,4 @@
-from queue import Queue
-from match import Match
+from lib import Match, Queue
 from datetime import datetime, timedelta
 import unittest
 
@@ -25,7 +24,7 @@ class TestQueue(unittest.TestCase):
         self.assertFalse(self.q.enqueue('test'))
 
     def test_latest(self):
-        self.assertEquals(self.q.latest(), None)
+        self.assertEquals(self.q.latest(), 0)
         self.q.enqueue('test')
         self.assertEquals(self.q.latest(), 'test')
 
