@@ -1,5 +1,30 @@
 # Trialing spaces MUST be retained in this file. Reddit uses them for fomating.
 
+CHANGES = [('West Bromwich Albion', 'westbrom'),
+           ('Manchester United', 'manchester-united'),
+           ('Tottenham Hotspur', 'tottenham-hotspur'),
+           ('FSV Mainz 05', 'fsvmainz'),
+           ('Swansea City', 'swansea'),
+           ('Queens Park Rangers', 'qpr'),
+           ('Aston Villa', 'aston-villa'),
+           (u'M\xe1laga CF', 'malaga'),
+           ('FC Barcelona', 'barcelona'),
+           (u'Atl\u00E9tico Madrid', 'atleticomadrid'),
+           ('VfL Wolfsburg', 'wolfsburg'),
+           ('VfB Stuttgart', 'stuttgart'),
+           ('Shalke 04', 'shalke'),
+           ('AS Roma', 'roma'),
+           ('SC Freiburg', 'freiburg'),
+           ('Getafe CF', 'getafe'),
+           ('Valencia CF', 'valencia'),
+           (u"Borussia M\u2019gladbach", 'borussiamoenchengladbach'),
+           ('RCD Mallorca', 'realmallorca'),
+           ('Sevilla FC', 'sevilla'),
+           ('Hamburger SV', 'hamburg'),
+           ('SC Freiburg', 'freiburg'),
+           ('Schalke 04', 'schalke'),
+           ('Levante UD', 'levante')]
+
 template = """
 Kickoff: %s, %s, %s
 Venue: %s
