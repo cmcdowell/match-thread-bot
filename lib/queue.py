@@ -16,7 +16,7 @@ class Queue(object):
 
     def latest(self):
         if self.size == 0:
-            return None
+            return 0
         return self.data[self.head]
 
     def empty(self):
