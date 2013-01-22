@@ -1,6 +1,6 @@
 from queue import Queue
 from match import Match
-from datetime import datetime
+from datetime import datetime, timedelta
 import unittest
 
 
@@ -47,8 +47,14 @@ class TestQueue(unittest.TestCase):
 class TestMatch(unittest.TestCase):
 
     def setUp(self):
+
+        self.dt = datetime.now() - timedelta(hours=-1)
+        self.test_kick_off = datetime(self.dt.year, self.dt.month, self.dt.day,
+                                      self.dt.hour, self.dt.minute, self.dt.second)
+        self.test_kick_off_string = datetime.strftime(self.test_kick_off,
+                                                      '%Y-%m-%d %H:%M:%S')
         row = (2,
-               u'2013-01-20 16:00:00',
+               self.test_kick_off_string,
                u'Tottenham Hotspur',
                u'Manchester United',
                u'White Hart Lane, London',
@@ -69,12 +75,32 @@ class TestMatch(unittest.TestCase):
         self.assertEquals(self.m.venue, u'White Hart Lane, London')
 
     def test_datetime(self):
-        test_date = datetime.strptime(u'2013-01-20 16:00:00', '%Y-%m-%d %H:%M:%S')
         self.assertIsInstance(self.m.kick_off, datetime)
-        self.assertEquals(self.m.kick_off, test_date)
+        self.assertEquals(self.m.kick_off, self.test_kick_off)
 
     def test_played(self):
         self.assertFalse(self.m.played)
+
+    def test_time_until_kick_off(self):
+        self.assertAlmostEquals(self.m.time_until_kick_off(), 60, 0)
+
+    def test_time_after_kick_off(self):
+
+        dt = datetime.now() - timedelta(hours=1)
+        test_kick_off = datetime(dt.year, dt.month, dt.day,
+                                 dt.hour, dt.minute, dt.second)
+        test_kick_off_string = datetime.strftime(test_kick_off,
+                                                 '%Y-%m-%d %H:%M:%S')
+        row = (2,
+               test_kick_off_string,
+               u'Tottenham Hotspur',
+               u'Manchester United',
+               u'White Hart Lane, London',
+               u'premier-league',
+               0)
+        m = Match(row)
+
+        self.assertAlmostEquals(m.time_after_kick_off(), 60, 0)
 
 if __name__ == '__main__':
     unittest.main()
