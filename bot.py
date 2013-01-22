@@ -77,17 +77,7 @@ def query_fixtures():
 
     with con:
         cursor.execute("""
-                       select * from fixtures_tbl where datetime(kick_off) > datetime('now') and datetime(kick_off) < datetime('2013-01-20 00:00:00')
-                       and
-                           id is not 176
-                       and
-                           id is not 526
-                       and
-                           id is not 173
-                       and
-                           id is not 524
-                       and
-                           id is not 364
+                       select * from fixtures_tbl where datetime(kick_off) > datetime('now') and datetime(kick_off) < datetime('2013-01-22 00:00:00')
                        order by kick_off desc;
                        """)
 
@@ -354,11 +344,9 @@ def main():
                                                      '%Y-%m-%d %H:%M:%S') -
                                    datetime.now()).total_seconds()
         else:
-            # The following is a bit ugly. If the post_queue is empty
-            # this stops an out of index error.
-            time_until_kick_off = 5 * 60.0
+            time_until_kick_off = 0
 
-        print '%f minutes until next kick off.' % (time_until_kick_off / 60)
+        print '%d minutes until next kick off.' % int(time_until_kick_off / 60)
         print 'Length of post queue:\t%d' % len(post_queue)
         print 'Length of update queue:\t%d' % len(update_queue)
 
@@ -368,9 +356,9 @@ def main():
             away_team = post[3]
             title = 'Match Thread: %s v %s' % (home_team,
                                                away_team)
-            content = construct_thread(post)
-
             if not thread_exists(home_team, away_team, r):
+
+                content = construct_thread(post)
                 try:
                     submission = r.submit('soccer', title, content)
                 except APIException as e:
