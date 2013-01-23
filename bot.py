@@ -12,18 +12,22 @@ from urllib2 import URLError
 
 import praw  # Python Reddit Api Wrapper
 import re
-import sqlite3
 import sys
 
 
 def thread_exists(home, away, r):
+    """
+    Takes home team, away team and Reddit object as argument.
+    Returns True if a thread for the match featuring the home team
+    and away team exists, returns false if one does not exist.
+    """
 
     home = max(home.split(), key=len)
     away = max(away.split(), key=len)
     sleep(1)
     subreddit = r.get_subreddit(SUBREDDIT)
     for submission in subreddit.get_new(limit=25):
-        if re.search(r'^Match Thread.*%s.*%s.*' % (home, away), submission.title):
+        if re.search(r'^Match Thread.*{0}.*{1}.*'.format(home, away), submission.title):
             return True
     return False
 
@@ -33,25 +37,35 @@ def query_fixtures():
     Returns a Queue of Match objects.
     """
 
-    con = sqlite3.connect('fixtures.db')
-    cursor = con.cursor()
-    # This query wont be in the finished version, this is just for testing. The
-    # query in the finished version will retrive all of the fixtures for the
-    # next 24 hours.
+    rows = [line.split('|') for line in sys.stdin]
 
-    with con:
-        cursor.execute(argv[1])
+    fixture_queue = Queue(len(rows))
 
-        rows = cursor.fetchall()
-        fixture_queue = Queue(len(rows))
+    for row in rows:
+        if '-v' in argv:
+            print '{0} v {1}, {2}'.format(row[2], row[3], row[1])
 
-        for row in rows:
-            fixture_queue.enqueue(Match(row))
+        fixture_queue.enqueue(Match(row))
 
-        return fixture_queue
+    # Prompt for fixtures in verbose mode
+    if '-v' in argv:
+        sys.stdin = open('/dev/tty')
+        while True:
+            msg = raw_input('[Y/N] >')
+            if 'n' in msg or 'N' in msg:
+                sys.exit()
+            elif 'y' in msg or 'Y' in msg:
+                break
+
+    return fixture_queue
 
 
 def construct_thread(match, submission_id='#'):
+    """
+    Takes a match object and returns a markdown string for posting
+    in a reddit thread. Takes submission id of a thread as an optional
+    keyword argument for redditstream.
+    """
 
     from lib.templates import stats_string
 
@@ -60,6 +74,7 @@ def construct_thread(match, submission_id='#'):
     stats = match.scrape_stats()
     events = match.scrape_events()
 
+    # Adds home tam and away team names to the top of the stats table
     stats_string = stats_string.format(match.home_team, match.away_team)
     events_string = ''
 
@@ -92,14 +107,10 @@ def construct_thread(match, submission_id='#'):
                'stats_string': stats_string,
                'events_string': events_string}
 
-    return template.substitute(context)
+    return template.safe_substitute(context)
 
 
 def main():
-
-    if len(argv) < 2:
-        print 'Please provide a valid sql query as an argument.'
-        sys.exit()
 
     post_queue = query_fixtures()
     update_queue = Queue(len(post_queue))
