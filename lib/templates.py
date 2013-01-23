@@ -3,12 +3,12 @@ import string
 
 
 template = string.Template("""
-Kickoff: $GMT, $CET, $EST  \n
-Venue: $venue  \n
-Referee: $referee  \n
-Attendance: $attendance  \n
+Kickoff: $GMT, $CET, $EST\n
+Venue: $venue\n
+Referee: $referee\n
+Attendance: $attendance\n
   \n
-[Reddit Stream](http://www.reddit-stream.com/comments/$id)
+[Reddit Stream](http://www.reddit-stream.com/comments/$id)  \n
 /r/soccer [chat room](http://webchat.freenode.net/?channels=#reddit-soccer)
 
 ***  \n
