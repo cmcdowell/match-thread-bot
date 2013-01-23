@@ -114,7 +114,7 @@ def main():
         else:
             time_until_kick_off = 0
 
-        print '{0} minutes until next kick off.'.format(time_until_kick_off)
+        print '{0} minutes until next kick off.'.format(int(time_until_kick_off))
         print 'Length of post queue:\t{0}'.format(len(post_queue))
         print 'Length of update queue:\t{0}'.format(len(update_queue))
 
