@@ -2,7 +2,7 @@
 
 from lib import Match, Queue
 from lib.templates import template, comment
-from settings import MATCH_LENGTH, PRE_KICK_OFF
+from settings import MATCH_LENGTH, PRE_KICK_OFF, SUBREDDIT
 
 from datetime import datetime, timedelta
 from praw.errors import APIException
@@ -21,7 +21,7 @@ def thread_exists(home, away, r):
     home = max(home.split(), key=len)
     away = max(away.split(), key=len)
     sleep(1)
-    subreddit = r.get_subreddit('soccer')
+    subreddit = r.get_subreddit(SUBREDDIT)
     for submission in subreddit.get_new(limit=25):
         if re.search(r'^Match Thread.*%s.*%s.*' % (home, away), submission.title):
             return True
@@ -131,7 +131,7 @@ def main():
 
                 content = construct_thread(post)
                 try:
-                    submission = r.submit('chessporn', title, content)
+                    submission = r.submit(SUBREDDIT, title, content)
                 except APIException as e:
                     print 'Could not submit thread', e
                 except URLError as e:

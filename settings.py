@@ -33,3 +33,5 @@ MATCH_LENGTH = 130
 # The number of minutes before kick off a thread is supposed
 # to be posted.
 PRE_KICK_OFF = 5
+
+SUBREDDIT = 'soccer'
