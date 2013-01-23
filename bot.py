@@ -1,16 +1,17 @@
 #!user/bin/env python
 
 from lib import Match, Queue
-from urllib2 import URLError
-from sys import argv
+from lib.templates import template, comment
+from settings import MATCH_LENGTH, PRE_KICK_OFF
 
 from datetime import datetime, timedelta
 from praw.errors import APIException
+from sys import argv
 from time import sleep
-from settings import comment
+from urllib2 import URLError
 import praw  # Python Reddit Api Wrapper
-import sqlite3
 import re
+import sqlite3
 
 
 def thread_exists(home, away, r):
@@ -50,7 +51,7 @@ def query_fixtures():
 
 def construct_thread(match, submission_id='#'):
 
-    from settings import TEMPLATE, stats_string
+    from lib.templates import stats_string
 
     kick_off = match.kick_off
 
@@ -89,7 +90,7 @@ def construct_thread(match, submission_id='#'):
                'stats_string': stats_string,
                'events_string': events_string}
 
-    return TEMPLATE.substitute(context)
+    return template.substitute(context)
 
 
 def main():
@@ -116,7 +117,7 @@ def main():
         else:
             time_until_kick_off = 0
 
-        if not post_queue.empty() and time_until_kick_off < (5):
+        if not post_queue.empty() and time_until_kick_off < (PRE_KICK_OFF):
             post = post_queue.dequeue()
             title = 'Match Thread: {0} v {1}'.format(post.home_team,
                                                      post.away_team)
@@ -154,7 +155,7 @@ def main():
             else:
                 print 'updating thread {0}'.format(post[0].title)
 
-                time_left = 130 - post[1].time_after_kick_off()
+                time_left = MATCH_LENGTH - post[1].time_after_kick_off()
 
                 if time_left > 0:
                     update_queue.enqueue(post)
