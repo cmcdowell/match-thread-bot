@@ -163,7 +163,7 @@ def main():
                                                                                       time_left)
 
         if post_queue.empty() and update_queue.empty():
-            print '\n Finished!'
+            print '\nFinished!'
             break
 
         print '\n'
