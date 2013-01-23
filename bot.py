@@ -60,18 +60,18 @@ def construct_thread(match, submission_id='#'):
     stats = match.scrape_stats()
     events = match.scrape_events()
 
-    stats_string = stats_string % (match.home_team, match.away_team)
+    stats_string = stats_string.format(match.home_team, match.away_team)
     events_string = ''
 
     for i in range(len(events.minute)):
-        events_string += '%s %s %s  \n' % (events.minute[i].strip(),
-                                           events.event_type[i].strip(),
-                                           events.event[i].strip())
+        events_string += '{0} {1} {2}  \n'.format(events.minute[i].strip(),
+                                                  events.event_type[i].strip(),
+                                                  events.event[i].strip())
 
     for i in range(len(stats.stat)):
-        stats_string += '%s|%s|%s  \n' % (stats.home[i].strip(),
-                                          stats.stat[i].strip(),
-                                          stats.away[i].strip())
+        stats_string += '{0}|{1}|{2}  \n'.format(stats.home[i].strip(),
+                                                 stats.stat[i].strip(),
+                                                 stats.away[i].strip())
 
     # TODO better hadling of timezones. This will break with DST.
     context = {'GMT': datetime.strftime(kick_off,

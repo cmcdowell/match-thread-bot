@@ -51,5 +51,5 @@ Streaming links \n
 [First Row Sports](http://www.thefirstrow.eu/sport/football.html)  \n
 """
 
-stats_string = """**%s**|Statistic|**%s**
+stats_string = """**{0}**|Statistic|**{1}**
 --:|:--:|:--  \n"""
