@@ -16,16 +16,23 @@ class Match(object):
         self.played = row[6]
         self.home_url = list_replace([self.home_team], CHANGES)[0]
         self.away_url = list_replace([self.away_team], CHANGES)[0]
-        self.stats_url = 'http://www.guardian.co.uk/football/match/{0}/{1}/{2}/{3}-v-{4}'.format(self.kick_off.year,
-                                                                                                 datetime.strftime(self.kick_off, '%b').lower(),
-                                                                                                 str(self.kick_off.day).zfill(2),
-                                                                                                 self.home_url,
-                                                                                                 self.away_url)
-        self.events_url = 'http://www.guardian.co.uk/football/match-popup/{0}/{1}/{2}/{3}-v-{4}'.format(self.kick_off.year,
-                                                                                                        datetime.strftime(self.kick_off, '%b').lower(),
-                                                                                                        str(self.kick_off.day).zfill(2),
-                                                                                                        self.home_url,
-                                                                                                        self.away_url)
+
+        stats_url_template = 'http://www.guardian.co.uk/football/match/{0}/{1}/{2}/{3}-v-{4}'
+        events_url_template = 'http://www.guardian.co.uk/football/match-popup/{0}/{1}/{2}/{3}-v-{4}'
+
+        self.stats_url = stats_url_template.format(self.kick_off.year,
+                                                   datetime.strftime(self.kick_off,
+                                                                     '%b').lower(),
+                                                   str(self.kick_off.day).zfill(2),
+                                                   self.home_url,
+                                                   self.away_url)
+
+        self.events_url = events_url_template.format(self.kick_off.year,
+                                                     datetime.strftime(self.kick_off,
+                                                                       '%b').lower(),
+                                                     str(self.kick_off.day).zfill(2),
+                                                     self.home_url,
+                                                     self.away_url)
 
     def time_until_kick_off(self):
         return (self.kick_off - datetime.now()).total_seconds() / 60
