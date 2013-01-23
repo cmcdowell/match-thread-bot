@@ -61,6 +61,28 @@ class TestMatch(unittest.TestCase):
                0)
         self.m = Match(row)
 
+    def test_stats_url(self):
+        stats_url_template = 'http://www.guardian.co.uk/football/match/{0}/{1}/{2}/{3}-v-{4}'
+
+        self.assertEquals(self.m.stats_url,
+                          stats_url_template.format(self.m.kick_off.year,
+                                                    datetime.strftime(self.m.kick_off,
+                                                                      '%b').lower(),
+                                                    str(self.m.kick_off.day).zfill(2),
+                                                    self.m.home_url,
+                                                    self.m.away_url))
+
+    def test_events_url(self):
+        events_url_template = 'http://www.guardian.co.uk/football/match-popup/{0}/{1}/{2}/{3}-v-{4}'
+
+        self.assertEquals(self.m.events_url,
+                          events_url_template.format(self.m.kick_off.year,
+                                                     datetime.strftime(self.m.kick_off,
+                                                                       '%b').lower(),
+                                                     str(self.m.kick_off.day).zfill(2),
+                                                     self.m.home_url,
+                                                     self.m.away_url))
+
     def test_home_team(self):
         self.assertIsInstance(self.m.home_team, unicode)
         self.assertEquals(self.m.home_team, u'Tottenham Hotspur')
