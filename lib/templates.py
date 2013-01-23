@@ -3,6 +3,7 @@ import string
 
 
 template = string.Template("""
+# $home_team v $away_team
 Kickoff: $GMT, $CET, $EST\n
 Venue: $venue\n
 Referee: $referee\n
@@ -13,7 +14,7 @@ Attendance: $attendance\n
 
 ***  \n
 
-Lineups
+## Lineups
 
 **$home_team**  \n
 
@@ -26,7 +27,7 @@ $away_squad
 
 ***  \n
 
-**Match Stats**  \n
+## Match Stats  \n
 
 score: $score  \n
 
@@ -35,7 +36,7 @@ $stats_string
 
 ***  \n
 
-**Match Events**
+## Match Events
   \n
 $events_string
 
@@ -45,10 +46,10 @@ $events_string
 """)
 
 comment = """
-Streaming links \n
-[Wiziwig](http://www.wiziwig.tv/competition.php?part=sports&discipline=football)  \n
-[livefootballol.tv](http://www.livefootballol.tv)  \n
-[First Row Sports](http://www.thefirstrow.eu/sport/football.html)  \n
+# Streaming links
+* [Wiziwig](http://www.wiziwig.tv/competition.php?part=sports&discipline=football)
+* [livefootballol.tv](http://www.livefootballol.tv)
+* [First Row Sports](http://www.thefirstrow.eu/sport/football.html)
 """
 
 stats_string = """**{0}**|Statistic|**{1}**
