@@ -9,9 +9,11 @@ from praw.errors import APIException
 from sys import argv
 from time import sleep
 from urllib2 import URLError
+
 import praw  # Python Reddit Api Wrapper
 import re
 import sqlite3
+import sys
 
 
 def thread_exists(home, away, r):
@@ -94,6 +96,10 @@ def construct_thread(match, submission_id='#'):
 
 
 def main():
+
+    if len(argv) < 2:
+        print 'Please provide a valid sql query as an argument.'
+        sys.exit()
 
     post_queue = query_fixtures()
     update_queue = Queue(len(post_queue))
