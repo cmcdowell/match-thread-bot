@@ -27,7 +27,7 @@ def thread_exists(home, away, r):
     sleep(1)
     subreddit = r.get_subreddit(SUBREDDIT)
     for submission in subreddit.get_new(limit=25):
-        if re.search(r'^Match Thread.*{0}.*{1}.*'.format(home, away), submission.title):
+        if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away), submission.title):
             return True
     return False
 
@@ -37,13 +37,13 @@ def query_fixtures():
     Returns a Queue of Match objects.
     """
 
-    rows = [line.split('|') for line in sys.stdin]
+    rows = [line.decode('utf-8').split(u'|') for line in sys.stdin]
 
     fixture_queue = Queue(len(rows))
 
     for row in rows:
         if '-v' in argv:
-            print '{0} v {1}, {2}'.format(row[2], row[3], row[1])
+            print u'{0} v {1}, {2}'.format(row[2], row[3], row[1])
 
         fixture_queue.enqueue(Match(row))
 
@@ -136,7 +136,7 @@ def main():
 
         if not post_queue.empty() and time_until_kick_off < (PRE_KICK_OFF):
             post = post_queue.dequeue()
-            title = 'Match Thread: {0} v {1}'.format(post.home_team,
+            title = u'Match Thread: {0} v {1}'.format(post.home_team,
                                                      post.away_team)
             if not thread_exists(post.home_team, post.away_team, r):
 
@@ -153,9 +153,9 @@ def main():
                     submission.add_comment(comment)
 
                     update_queue.enqueue((submission, post))
-                    print 'adding thread to update queue {0}'.format(submission.title)
+                    print u'adding thread to update queue {0}'.format(submission.title)
             else:
-                print 'Thread {0} already exists'.format(title)
+                print u'Thread {0} already exists'.format(title)
 
         elif not update_queue.empty():
             post = update_queue.dequeue()
@@ -170,13 +170,13 @@ def main():
                 update_queue.enqueue(post)
                 print 'Could not update thread', e
             else:
-                print 'updating thread {0}'.format(post[0].title)
+                print u'updating thread {0}'.format(post[0].title)
 
                 time_left = MATCH_LENGTH - post[1].time_after_kick_off()
 
                 if time_left > 0:
                     update_queue.enqueue(post)
-                    print 'adding thread {0} to update queue {1} minutes left'.format(post[0].title,
+                    print u'adding thread {0} to update queue {1} minutes left'.format(post[0].title,
                                                                                       time_left)
 
         if post_queue.empty() and update_queue.empty():

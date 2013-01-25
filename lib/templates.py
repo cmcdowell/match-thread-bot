@@ -2,7 +2,7 @@
 import string
 
 
-template = string.Template("""
+template = string.Template(u"""
 # $home_team v $away_team
 Kickoff: $GMT, $CET, $EST\n
 Venue: $venue\n
@@ -45,12 +45,12 @@ $events_string
 ^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback)
 """)
 
-comment = """
+comment = u"""
 # Streaming links
 * [Wiziwig](http://www.wiziwig.tv/competition.php?part=sports&discipline=football)
 * [livefootballol.tv](http://www.livefootballol.tv)
 * [First Row Sports](http://www.thefirstrow.eu/sport/football.html)
 """
 
-stats_string = """**{0}**|Statistic|**{1}**
+stats_string = u"""**{0}**|Statistic|**{1}**
 --:|:--:|:--  \n"""

@@ -35,4 +35,4 @@ MATCH_LENGTH = 130
 # to be posted.
 PRE_KICK_OFF = 5
 
-SUBREDDIT = 'soccer'
+SUBREDDIT = 'chessporn'
