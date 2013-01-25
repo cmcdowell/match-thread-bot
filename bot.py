@@ -1,4 +1,4 @@
-#!user/bin/env python
+#!/usr/bin/env python
 
 from lib import Match, Queue
 from lib.templates import template, comment
