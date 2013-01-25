@@ -23,7 +23,7 @@ CHANGES = [('West Bromwich Albion', 'westbrom'),
            ('RCD Mallorca', 'realmallorca'),
            ('Sevilla FC', 'sevilla'),
            ('Hamburger SV', 'hamburg'),
-           (u'FC N\u00FCrnberg', 'nurnberg')
+           (u'FC N\u00FCrnberg', 'nurnberg'),
            ('SC Freiburg', 'freiburg'),
            ('Schalke 04', 'schalke'),
            ('Levante UD', 'levante')]
