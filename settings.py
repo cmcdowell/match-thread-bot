@@ -2,31 +2,35 @@
 
 # Special cases, where the team name does not fit the pattern in
 # the Guardian's urls.
-CHANGES = [('West Bromwich Albion', 'westbrom'),
-           ('Manchester United', 'manchester-united'),
-           ('Tottenham Hotspur', 'tottenham-hotspur'),
-           ('FSV Mainz 05', 'fsvmainz'),
-           ('Swansea City', 'swansea'),
-           ('Queens Park Rangers', 'qpr'),
-           ('Aston Villa', 'aston-villa'),
-           (u'M\xe1laga CF', 'malaga'),
-           ('FC Barcelona', 'barcelona'),
-           (u'Atl\u00E9tico Madrid', 'atleticomadrid'),
-           ('VfL Wolfsburg', 'wolfsburg'),
-           ('VfB Stuttgart', 'stuttgart'),
-           ('Shalke 04', 'shalke'),
-           ('AS Roma', 'roma'),
-           ('SC Freiburg', 'freiburg'),
-           ('Getafe CF', 'getafe'),
-           ('Valencia CF', 'valencia'),
-           (u"Borussia M\u2019gladbach", 'borussiamoenchengladbach'),
-           ('RCD Mallorca', 'realmallorca'),
-           ('Sevilla FC', 'sevilla'),
-           ('Hamburger SV', 'hamburg'),
-           (u'1. FC N\u00FCrnberg', 'nurnberg'),
-           ('SC Freiburg', 'freiburg'),
-           ('Schalke 04', 'schalke'),
-           ('Levante UD', 'levante')]
+CHANGES = [
+    ('AS Roma', 'roma'),
+    ('Aston Villa', 'aston-villa'),
+    ('FC Barcelona', 'barcelona'),
+    ('FSV Mainz 05', 'fsvmainz'),
+    ('Getafe CF', 'getafe'),
+    ('Hamburger SV', 'hamburg'),
+    ('Hannover 96', 'hannover'),
+    ('Levante UD', 'levante'),
+    ('Manchester United', 'manchester-united'),
+    ('Queens Park Rangers', 'qpr'),
+    ('RCD Espanyol', 'espanyol'),
+    ('RCD Mallorca', 'realmallorca'),
+    ('SC Freiburg', 'freiburg'),
+    ('SC Freiburg', 'freiburg'),
+    ('Schalke 04', 'schalke'),
+    ('Sevilla FC', 'sevilla'),
+    ('Shalke 04', 'shalke'),
+    ('Swansea City', 'swansea'),
+    ('Tottenham Hotspur', 'tottenham-hotspur'),
+    ('Valencia CF', 'valencia'),
+    ('VfB Stuttgart', 'stuttgart'),
+    ('VfL Wolfsburg', 'wolfsburg'),
+    ('West Bromwich Albion', 'westbrom'),
+    (u"Borussia M\u2019gladbach", 'borussiamoenchengladbach'),
+    (u'1. FC N\u00FCrnberg', 'nurnberg'),
+    (u'Atl\u00E9tico Madrid', 'atleticomadrid'),
+    (u'M\xe1laga CF', 'malaga'),
+]
 
 # How many minutes each reddit thread is updated for.
 MATCH_LENGTH = 130
@@ -35,4 +39,4 @@ MATCH_LENGTH = 130
 # to be posted.
 PRE_KICK_OFF = 5
 
-SUBREDDIT = 'chessporn'
+SUBREDDIT = 'soccer'

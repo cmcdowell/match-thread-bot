@@ -177,7 +177,7 @@ def main():
                 if time_left > 0:
                     update_queue.enqueue(post)
                     print u'adding thread {0} to update queue {1} minutes left'.format(post[0].title,
-                                                                                      time_left)
+                                                                                      int(time_left))
 
         if post_queue.empty() and update_queue.empty():
             print '\nFinished!'
