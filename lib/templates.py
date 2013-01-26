@@ -4,13 +4,13 @@ import string
 
 template = string.Template(u"""
 # $home_team v $away_team
-Kickoff: $GMT, $CET, $EST\n
-Venue: $venue\n
-Referee: $referee\n
-Attendance: $attendance\n
+Kickoff: $GMT, $CET, $EST  
+Venue: $venue  
+Referee: $referee  
+Attendance: $attendance  
   \n
-[Reddit Stream](http://www.reddit-stream.com/comments/$id)  \n
-/r/soccer [chat room](http://webchat.freenode.net/?channels=#reddit-soccer)
+[Reddit Stream](http://www.reddit-stream.com/comments/$id)  
+/r/soccer [chat room](http://webchat.freenode.net/?channels=#reddit-soccer)  
 
 ***  \n
 
