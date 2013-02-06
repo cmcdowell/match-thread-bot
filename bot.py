@@ -24,10 +24,11 @@ def thread_exists(home, away, r):
 
     home = max(home.split(), key=len)
     away = max(away.split(), key=len)
-    sleep(1)
+    sleep(1)  # Sleep to ensure reddit API ratelimit not exceded.
     subreddit = r.get_subreddit(SUBREDDIT)
     for submission in subreddit.get_new(limit=25):
-        if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away), submission.title):
+        if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away),
+                     submission.title):
             return True
     return False
 
@@ -79,12 +80,12 @@ def construct_thread(match, submission_id='#'):
     events_string = ''
 
     for i in range(len(events.minute)):
-        events_string += '{0} {1} {2}  \n'.format(events.minute[i].strip(),
+        events_string += u'{0} {1} {2}  \n'.format(events.minute[i].strip(),
                                                   events.event_type[i].strip(),
                                                   events.event[i].strip())
 
     for i in range(len(stats.stat)):
-        stats_string += '{0}|{1}|{2}  \n'.format(stats.home[i].strip(),
+        stats_string += u'{0}|{1}|{2}  \n'.format(stats.home[i].strip(),
                                                  stats.stat[i].strip(),
                                                  stats.away[i].strip())
 

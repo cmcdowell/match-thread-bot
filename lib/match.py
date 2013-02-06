@@ -183,7 +183,7 @@ class Match(object):
 
         try:
             # Adds the half time score
-            score += (' ' + score_html.span.contents[0].strip())
+            score += (u' ' + score_html.span.contents[0].strip())
         except AttributeError as e:
             print 'Half time score not found', e
         except IndexError as e:
