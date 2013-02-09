@@ -33,7 +33,7 @@ def thread_exists(home, away, r):
     return False
 
 
-def query_fixtures():
+def construct_match_queue():
     """
     Returns a Queue of Match objects.
     """
@@ -81,13 +81,13 @@ def construct_thread(match, submission_id='#'):
 
     for i in range(len(events.minute)):
         events_string += u'{0} {1} {2}  \n'.format(events.minute[i].strip(),
-                                                  events.event_type[i].strip(),
-                                                  events.event[i].strip())
+                                                   events.event_type[i].strip(),
+                                                   events.event[i].strip())
 
     for i in range(len(stats.stat)):
         stats_string += u'{0}|{1}|{2}  \n'.format(stats.home[i].strip(),
-                                                 stats.stat[i].strip(),
-                                                 stats.away[i].strip())
+                                                  stats.stat[i].strip(),
+                                                  stats.away[i].strip())
 
     # TODO better hadling of timezones. This will break with DST.
     context = {'GMT': datetime.strftime(kick_off,
@@ -113,7 +113,7 @@ def construct_thread(match, submission_id='#'):
 
 def main():
 
-    post_queue = query_fixtures()
+    post_queue = construct_match_queue()
     update_queue = Queue(len(post_queue))
 
     r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
@@ -138,15 +138,13 @@ def main():
         if not post_queue.empty() and time_until_kick_off < (PRE_KICK_OFF):
             post = post_queue.dequeue()
             title = u'Match Thread: {0} v {1}'.format(post.home_team,
-                                                     post.away_team)
+                                                      post.away_team)
             if not thread_exists(post.home_team, post.away_team, r):
 
                 content = construct_thread(post)
                 try:
                     submission = r.submit(SUBREDDIT, title, content)
-                except APIException as e:
-                    print 'Could not submit thread', e
-                except URLError as e:
+                except (APIException, URLError, IOError) as e:
                     print 'Could not submit thread', e
                 else:
                     print 'posting thread %s' % submission.title
@@ -164,10 +162,7 @@ def main():
             try:
                 post[0].edit(construct_thread(post[1],
                                               submission_id=post[0].id))
-            except APIException as e:
-                update_queue.enqueue(post)
-                print 'Could not update thread', e
-            except URLError as e:
+            except (APIException, URLError, IOError) as e:
                 update_queue.enqueue(post)
                 print 'Could not update thread', e
             else:
@@ -178,7 +173,7 @@ def main():
                 if time_left > 0:
                     update_queue.enqueue(post)
                     print u'adding thread {0} to update queue {1} minutes left'.format(post[0].title,
-                                                                                      int(time_left))
+                                                                                       int(time_left))
 
         if post_queue.empty() and update_queue.empty():
             print '\nFinished!'
