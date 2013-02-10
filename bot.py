@@ -6,13 +6,14 @@ from settings import MATCH_LENGTH, PRE_KICK_OFF, SUBREDDIT
 
 from datetime import datetime, timedelta
 from praw.errors import APIException
-from sys import argv
 from time import sleep
 from urllib2 import URLError
-
-import praw  # Python Reddit Api Wrapper
+import argparse
+import pickle
 import re
 import sys
+
+import praw  # Python Reddit Api Wrapper
 
 
 def thread_exists(home, away, r):
@@ -33,9 +34,10 @@ def thread_exists(home, away, r):
     return False
 
 
-def construct_match_queue():
+def construct_match_queue(verbose):
     """
-    Returns a Queue of Match objects.
+    Returns a Queue of Match objects constructed from piped in sql
+    query.
     """
 
     rows = [line.decode('utf-8').split(u'|') for line in sys.stdin]
@@ -43,13 +45,13 @@ def construct_match_queue():
     fixture_queue = Queue(len(rows))
 
     for row in rows:
-        if '-v' in argv:
+        if verbose:
             print u'{0} v {1}, {2}'.format(row[2], row[3], row[1])
 
         fixture_queue.enqueue(Match(row))
 
     # Prompt for fixtures in verbose mode
-    if '-v' in argv:
+    if verbose:
         sys.stdin = open('/dev/tty')
         while True:
             msg = raw_input('[Y/N] >')
@@ -111,76 +113,122 @@ def construct_thread(match, submission_id='#'):
     return template.safe_substitute(context)
 
 
+def load_from_save(file='queues.pickle'):
+    """
+    Loads objects from pickle file, by default this
+    file is queues.pickle
+
+    Takes optional argument, file, as string containing path to
+    pickle file.
+    """
+
+    with open(file, 'rb') as f:
+        previous_state = pickle.load(f)
+
+    return previous_state
+
+
+def save_to_file(file='queues.pickle', **kwargs):
+    """
+    Saves kwargs to pickle file, by default this file is queues.pickle
+
+    Takes optional argument, file, as string containing path to pickle
+    file.
+    """
+
+    with open(file, 'wb') as f:
+        pickle.dump(kwargs, f)
+
+
 def main():
 
-    post_queue = construct_match_queue()
-    update_queue = Queue(len(post_queue))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--verbose', help='increase output verbosity',
+                        action='store_true')
+    parser.add_argument('-l', '--load', help='load from last canceled run',
+                        action='store_true')
+    args = parser.parse_args()
+
+    if args.load:
+        previous_state = load_from_save()
+
+        post_queue = previous_state['post_queue']
+        update_queue = previous_state['update_queue']
+    else:
+        post_queue = construct_match_queue(args.verbose)
+        update_queue = Queue(len(post_queue))
 
     r = praw.Reddit(user_agent='Match Thread Submiter for /r/soccer, by /u/Match-Thread-Bot')
     r.login()  # Login details in praw.ini file
 
     while True:
 
-        if not post_queue.empty():
-            time_until_kick_off = post_queue.latest().time_until_kick_off()
-        else:
-            time_until_kick_off = 0
+        try:
+            if not post_queue.empty():
+                time_until_kick_off = post_queue.latest().time_until_kick_off()
+            else:
+                time_until_kick_off = 0
 
-        print '{0} minutes until next kick off.'.format(int(time_until_kick_off))
-        print 'Length of post queue:\t{0}'.format(len(post_queue))
-        print 'Length of update queue:\t{0}'.format(len(update_queue))
+            print '{0} minutes until next kick off.'.format(int(time_until_kick_off))
+            print 'Length of post queue:\t{0}'.format(len(post_queue))
+            print 'Length of update queue:\t{0}'.format(len(update_queue))
 
-        if not post_queue.empty():
-            time_until_kick_off = post_queue.latest().time_until_kick_off()
-        else:
-            time_until_kick_off = 0
+            if not post_queue.empty():
+                time_until_kick_off = post_queue.latest().time_until_kick_off()
+            else:
+                time_until_kick_off = 0
 
-        if not post_queue.empty() and time_until_kick_off < (PRE_KICK_OFF):
-            post = post_queue.dequeue()
-            title = u'Match Thread: {0} v {1}'.format(post.home_team,
-                                                      post.away_team)
-            if not thread_exists(post.home_team, post.away_team, r):
+            if not post_queue.empty() and time_until_kick_off < (PRE_KICK_OFF):
+                post = post_queue.dequeue()
+                title = u'Match Thread: {0} v {1}'.format(post.home_team,
+                                                          post.away_team)
+                if not thread_exists(post.home_team, post.away_team, r):
 
-                content = construct_thread(post)
-                try:
-                    submission = r.submit(SUBREDDIT, title, content)
-                except (APIException, URLError, IOError) as e:
-                    print 'Could not submit thread', e
+                    content = construct_thread(post)
+                    try:
+                        submission = r.submit(SUBREDDIT, title, content)
+                    except (APIException, URLError, IOError) as e:
+                        print 'Could not submit thread', e
+                    else:
+                        print 'posting thread %s' % submission.title
+
+                        submission.add_comment(comment)
+
+                        update_queue.enqueue((submission.id, post))
+                        print u'adding thread to update queue {0}'.format(submission.title)
                 else:
-                    print 'posting thread %s' % submission.title
+                    print u'Thread {0} already exists'.format(title)
 
-                    submission.add_comment(comment)
+            elif not update_queue.empty():
+                post = update_queue.dequeue()
 
-                    update_queue.enqueue((submission, post))
-                    print u'adding thread to update queue {0}'.format(submission.title)
-            else:
-                print u'Thread {0} already exists'.format(title)
-
-        elif not update_queue.empty():
-            post = update_queue.dequeue()
-
-            try:
-                post[0].edit(construct_thread(post[1],
-                                              submission_id=post[0].id))
-            except (APIException, URLError, IOError) as e:
-                update_queue.enqueue(post)
-                print 'Could not update thread', e
-            else:
-                print u'updating thread {0}'.format(post[0].title)
-
-                time_left = MATCH_LENGTH - post[1].time_after_kick_off()
-
-                if time_left > 0:
+                try:
+                    submission = r.get_submission(submission_id=post[0])
+                    submission.edit(construct_thread(post[1],
+                                                     submission_id=post[0]))
+                except (APIException, URLError, IOError) as e:
                     update_queue.enqueue(post)
-                    print u'adding thread {0} to update queue {1} minutes left'.format(post[0].title,
-                                                                                       int(time_left))
+                    print 'Could not update thread', e
+                else:
+                    print u'updating thread {0}'.format(submission.title)
 
-        if post_queue.empty() and update_queue.empty():
-            print '\nFinished!'
-            break
+                    time_left = MATCH_LENGTH - post[1].time_after_kick_off()
 
-        print '\n'
-        sleep(30)
+                    if time_left > 0:
+                        update_queue.enqueue(post)
+                        print u'adding thread {0} to update queue {1} minutes left'.format(submission.title,
+                                                                                           int(time_left))
+
+            if post_queue.empty() and update_queue.empty():
+                print '\nFinished!'
+                break
+
+            print '\n'
+            sleep(30)
+
+        except KeyboardInterrupt:
+            save_to_file(post_queue=post_queue, update_queue=update_queue)
+            raise
 
 
 if __name__ == '__main__':
