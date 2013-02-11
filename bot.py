@@ -9,6 +9,7 @@ from praw.errors import APIException
 from time import sleep
 from urllib2 import URLError
 import argparse
+import logging
 import pickle
 import re
 import sys
@@ -23,15 +24,23 @@ def thread_exists(home, away, r):
     and away team exists, returns false if one does not exist.
     """
 
+    log = logging.getLogger('ex')
+
     home = max(home.split(), key=len)
     away = max(away.split(), key=len)
     sleep(1)  # Sleep to ensure reddit API ratelimit not exceded.
-    subreddit = r.get_subreddit(SUBREDDIT)
-    for submission in subreddit.get_new(limit=25):
-        if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away),
-                     submission.title):
-            return True
-    return False
+    try:
+        subreddit = r.get_subreddit(SUBREDDIT)
+
+        for submission in subreddit.get_new(limit=25):
+            if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away),
+                         submission.title):
+                return True
+        return False
+
+    except Exception:
+        log.exception('could not search new queue')
+        return True  # if new queue can not be searched, assume thread exists.
 
 
 def construct_match_queue(verbose):
@@ -142,6 +151,9 @@ def save_to_file(file='queues.pickle', **kwargs):
 
 def main():
 
+    logging.basicConfig(filename='errors.log', level=logging.ERROR)
+    log = logging.getLogger('ex')
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', help='increase output verbosity',
                         action='store_true')
@@ -187,12 +199,11 @@ def main():
                     content = construct_thread(post)
                     try:
                         submission = r.submit(SUBREDDIT, title, content)
-                    except (APIException, URLError, IOError) as e:
-                        print 'Could not submit thread', e
+                    except (APIException, URLError, IOError):
+                        log.exception('Could not submit thread.')
+                        submission.add_comment(comment)
                     else:
                         print 'posting thread %s' % submission.title
-
-                        submission.add_comment(comment)
 
                         update_queue.enqueue((submission.id, post))
                         print u'adding thread to update queue {0}'.format(submission.title)
@@ -206,9 +217,9 @@ def main():
                     submission = r.get_submission(submission_id=post[0])
                     submission.edit(construct_thread(post[1],
                                                      submission_id=post[0]))
-                except (APIException, URLError, IOError) as e:
+                except (APIException, URLError, IOError):
                     update_queue.enqueue(post)
-                    print 'Could not update thread', e
+                    log.exception('Could not update thread')
                 else:
                     print u'updating thread {0}'.format(submission.title)
 
