@@ -42,7 +42,7 @@ $events_string
 
 \n
 ***  \n
-^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback)
+^^I'm ^^a ^^bot ^^that ^^makes ^^compact ^^match ^^threads ^^[feedback?](http://www.reddit.com/message/compose/?to=match-thread-bot&subject=feedback) ^^[FAQ](http://www.reddit.com/r/match_thread_bot/comments/189y65/faq)
 """)
 
 comment = u"""
