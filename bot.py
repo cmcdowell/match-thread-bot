@@ -199,9 +199,9 @@ def main():
                     content = construct_thread(post)
                     try:
                         submission = r.submit(SUBREDDIT, title, content)
+                        submission.add_comment(comment)
                     except (APIException, URLError, IOError):
                         log.exception('Could not submit thread.')
-                        submission.add_comment(comment)
                     else:
                         print 'posting thread %s' % submission.title
 
