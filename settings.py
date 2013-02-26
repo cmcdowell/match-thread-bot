@@ -40,3 +40,5 @@ MATCH_LENGTH = 130
 PRE_KICK_OFF = 5
 
 SUBREDDIT = 'soccer'
+ALT_SUBREDDIT = 'gunners'
+DUPE_TEAM = 'Arsenal'

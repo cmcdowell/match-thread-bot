@@ -8,12 +8,13 @@ from urllib2 import urlopen, HTTPError, URLError
 
 class Match(object):
 
-    def __init__(self, row):
+    def __init__(self, row, gunners=False):
         self.kick_off = datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S')
         self.home_team = row[2]
         self.away_team = row[3]
         self.venue = row[4]
         self.played = row[6]
+        self.gunners = gunners
         self.home_url = list_replace([self.home_team], CHANGES)[0]
         self.away_url = list_replace([self.away_team], CHANGES)[0]
 

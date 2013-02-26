@@ -2,7 +2,7 @@
 
 from lib import Match, Queue
 from lib.templates import template, comment
-from settings import MATCH_LENGTH, PRE_KICK_OFF, SUBREDDIT
+from settings import MATCH_LENGTH, PRE_KICK_OFF, SUBREDDIT, ALT_SUBREDDIT, DUPE_TEAM
 
 from datetime import datetime, timedelta
 from praw.errors import APIException
@@ -17,7 +17,7 @@ import sys
 import praw  # Python Reddit Api Wrapper
 
 
-def thread_exists(home, away, r):
+def thread_exists(match, r):
     """
     Takes home team, away team and Reddit object as argument.
     Returns True if a thread for the match featuring the home team
@@ -26,11 +26,14 @@ def thread_exists(home, away, r):
 
     log = logging.getLogger('ex')
 
-    home = max(home.split(), key=len)
-    away = max(away.split(), key=len)
+    home = max(match.home_team.split(), key=len)
+    away = max(match.away_team.split(), key=len)
     sleep(1)  # Sleep to ensure reddit API ratelimit not exceded.
     try:
-        subreddit = r.get_subreddit(SUBREDDIT)
+        if match.gunners:
+            subreddit = r.get_subreddit(ALT_SUBREDDIT)
+        else:
+            subreddit = r.get_subreddit(SUBREDDIT)
 
         for submission in subreddit.get_new(limit=25):
             if re.search(u'^Match Thread.*{0}.*{1}.*'.format(home, away),
@@ -51,13 +54,18 @@ def construct_match_queue(verbose):
 
     rows = [line.decode('utf-8').split(u'|') for line in sys.stdin]
 
-    fixture_queue = Queue(len(rows))
+    fixture_queue = Queue(len(rows) + 1)
 
     for row in rows:
         if verbose:
             print u'{0} v {1}, {2}'.format(row[2], row[3], row[1])
 
         fixture_queue.enqueue(Match(row))
+
+        # Flag match for submission to /r/gunners
+        if row[2] == DUPE_TEAM or row[3] == DUPE_TEAM:
+            print 'duplicating match'
+            fixture_queue.enqueue(Match(row, gunners=True))
 
     # Prompt for fixtures in verbose mode
     if verbose:
@@ -194,11 +202,16 @@ def main():
                 post = post_queue.dequeue()
                 title = u'Match Thread: {0} v {1}'.format(post.home_team,
                                                           post.away_team)
-                if not thread_exists(post.home_team, post.away_team, r):
+                if not thread_exists(post, r):
 
                     content = construct_thread(post)
                     try:
-                        submission = r.submit(SUBREDDIT, title, content)
+
+                        if post.gunners:  # Submit gunners thread to /r/gunners
+                            submission = r.submit(ALT_SUBREDDIT, title, content)
+                        else:
+                            submission = r.submit(SUBREDDIT, title, content)
+
                         submission.add_comment(comment)
                     except (APIException, URLError, IOError):
                         log.exception('Could not submit thread.')
