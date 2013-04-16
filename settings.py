@@ -1,5 +1,3 @@
-#!usr/bin/env python
-
 # Special cases, where the team name does not fit the pattern in
 # the Guardian's urls.
 CHANGES = [
